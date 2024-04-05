@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "global_id": "2780cf76-1829-42b2-bdb6-40c41b6a9ccb",
+    "client_id": "7c1b2ca5-cfde-4ea7-adb7-9a06d34125f9"
+  },
+  "event_id": "f1763d99-4bdd-41be-acee-c71e8d1c8d22",
+  "event_type": "create_order_saga.create_order.request",
+  "event_data": {
+    "id": "a5475997-2458-41d1-a624-0a1e471bc0b9"
+  },
+  "saga": {
+    "id": "22fb74c3-82e8-4140-ab99-d9c086581f2d",
+    "name": "create_order_saga",
+    "reply_channel": "kfk.dev.create_order_saga.reply",
+    "step": {
+      "id": "d8073562-d544-4290-aa00-4c919a554e27",
+      "name": "create_order"
+    },
+    "metadata": {
+      "verify_step": {
+        "validation_external_id": "b7dd7bbe-6463-4b71-b33f-02682b9293dd"
+      }
+    }
+  }
+}
