@@ -40,7 +40,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, err
 		return nil, ErrCurrentStepNotFound
 	}
 
-	if message.ActionType.IsSuccess() {
+	if message.EventType.Action.IsSuccess() {
 		nextStep, ok := currentStep.Next()
 		if !ok {
 			return nil, nil
@@ -48,7 +48,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, err
 		return nextStep, nil
 	}
 
-	if message.ActionType.IsFailure() {
+	if message.EventType.Action.IsFailure() {
 		firstCompensableStep, ok := currentStep.FirstCompensableStep()
 		if !ok {
 			return nil, nil
@@ -56,7 +56,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, err
 		return firstCompensableStep, nil
 	}
 
-	if message.ActionType.IsCompensated() {
+	if message.EventType.Action.IsCompensated() {
 		nextCompensableStep, ok := currentStep.FirstCompensableStep()
 		if !ok {
 			return nil, nil
