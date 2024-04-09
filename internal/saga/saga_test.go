@@ -6,11 +6,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
-func TestCoordinator_GetNextStep(t *testing.T) {
-	logger := zap.NewNop().Sugar()
+func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("should return error when current step is not found in message workflow", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := &StepData{
@@ -31,7 +29,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -52,7 +49,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: SuccessActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Nil(t, step)
 		assert.Error(t, err)
 		assert.Equal(t, ErrCurrentStepNotFound, err)
@@ -78,7 +75,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -99,7 +95,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: SuccessActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Nil(t, step)
 		assert.Nil(t, err)
 	})
@@ -133,7 +129,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -154,7 +149,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: SuccessActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Equal(t, verifyClient, step)
 		assert.Nil(t, err)
 	})
@@ -188,7 +183,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -209,7 +203,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: FailureActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Equal(t, createOrderStep, step)
 		assert.Nil(t, err)
 	})
@@ -243,7 +237,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.failure",
@@ -264,7 +257,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: FailureActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Equal(t, createOrderStep, step)
 		assert.Nil(t, err)
 	})
@@ -298,7 +291,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.success",
@@ -319,7 +311,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: FailureActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Nil(t, step)
 		assert.Nil(t, err)
 	})
@@ -353,7 +345,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.success",
@@ -374,7 +365,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: CompensatedActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Nil(t, step)
 		assert.Nil(t, err)
 	})
@@ -408,7 +399,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.success",
@@ -429,7 +419,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: CompensatedActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Equal(t, createOrderStep, step)
 		assert.Nil(t, err)
 	})
@@ -453,7 +443,6 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -474,7 +463,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			ActionType: RequestActionType,
 		}
 
-		step, err := coordinator.GetNextStep(context.Background(), message, workflow)
+		step, err := workflow.GetNextStep(context.Background(), message)
 		assert.Nil(t, step)
 		assert.Error(t, err)
 		assert.Equal(t, ErrUnknownActionType, err)
