@@ -54,8 +54,8 @@ func (m Message) GetActionType() (ActionType, bool) {
 		return SuccessActionType, true
 	case FailureActionType.String():
 		return FailureActionType, true
-	case CompensationActionType.String():
-		return CompensationActionType, true
+	case CompensateActionType.String():
+		return CompensateActionType, true
 	case CompensatedActionType.String():
 		return CompensatedActionType, true
 	default:

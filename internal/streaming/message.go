@@ -37,8 +37,8 @@ func (m Message) GetActionType() (saga.ActionType, bool) {
 		return saga.SuccessActionType, true
 	case saga.FailureActionType.String():
 		return saga.FailureActionType, true
-	case saga.CompensationActionType.String():
-		return saga.CompensationActionType, true
+	case saga.CompensateActionType.String():
+		return saga.CompensateActionType, true
 	case saga.CompensatedActionType.String():
 		return saga.CompensatedActionType, true
 	default:

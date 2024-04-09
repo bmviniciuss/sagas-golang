@@ -19,9 +19,19 @@ func (at ActionType) IsCompensated() bool {
 }
 
 const (
-	RequestActionType      ActionType = "request"
-	CompensationActionType ActionType = "compensation"
-	SuccessActionType      ActionType = "success"
-	FailureActionType      ActionType = "failure"
-	CompensatedActionType  ActionType = "compensated"
+	// requests
+	RequestActionType    ActionType = "request"
+	CompensateActionType ActionType = "compensate"
+	// responses
+	SuccessActionType     ActionType = "success"
+	FailureActionType     ActionType = "failure"
+	CompensatedActionType ActionType = "compensated"
+)
+
+var (
+	consumerActionTypes = []ActionType{
+		SuccessActionType,
+		FailureActionType,
+		CompensatedActionType,
+	}
 )
