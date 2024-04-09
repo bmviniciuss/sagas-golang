@@ -6,9 +6,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestCoordinator_GetNextStep(t *testing.T) {
+	logger := zap.NewNop().Sugar()
 	t.Run("should return error when current step is not found in message workflow", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := &StepData{
@@ -29,7 +31,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -76,7 +78,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -131,7 +133,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -186,7 +188,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
@@ -241,7 +243,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.failure",
@@ -296,7 +298,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.success",
@@ -351,7 +353,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.success",
@@ -406,7 +408,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "verify_client.success",
@@ -451,7 +453,7 @@ func TestCoordinator_GetNextStep(t *testing.T) {
 			Steps:        steps,
 		}
 
-		coordinator := NewCoordinator()
+		coordinator := NewCoordinator(logger)
 		message := Message{
 			EventID:   uuid.NewString(),
 			EventType: "create_order.success",
