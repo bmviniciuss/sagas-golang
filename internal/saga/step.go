@@ -29,10 +29,7 @@ type (
 // Returns the next step if it exists
 // returns nil, false if there is no next step
 func (s *Step) Next() (*Step, bool) {
-	if s.next == nil {
-		return nil, false
-	}
-	return s.next, true
+	return s.next, s.next != nil
 }
 
 // Previous returns the previous step in the workflow.
@@ -40,10 +37,7 @@ func (s *Step) Next() (*Step, bool) {
 // Returns the previous step if it exists
 // returns nil, false if there is no previous step
 func (s *Step) Previous() (*Step, bool) {
-	if s.prev == nil {
-		return nil, false
-	}
-	return s.prev, true
+	return s.prev, s.prev != nil
 }
 
 // FirstCompensableStep returns the first compensable step in the workflow before the current step or the current step itself.
@@ -59,7 +53,7 @@ func (s *Step) FirstCompensableStep() (*Step, bool) {
 		if current.Compensable {
 			return current, true
 		}
-		current = current.prev
+		current, _ = current.Previous()
 	}
 	return nil, false
 }
@@ -108,7 +102,7 @@ func (sl *StepsList) GetStep(id uuid.UUID) (*Step, bool) {
 		if current.ID == id {
 			return current, true
 		}
-		current = current.next
+		current, _ = current.Next()
 	}
 	return nil, false
 }
@@ -120,7 +114,7 @@ func (sl *StepsList) ToList() []Step {
 	i := 0
 	for current != nil {
 		s[i] = *current
-		current = current.next
+		current, _ = current.Next()
 		i++
 	}
 	return s
