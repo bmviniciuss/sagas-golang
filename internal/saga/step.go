@@ -64,8 +64,12 @@ type StepsList struct {
 	len  int
 }
 
-func NewStepList() *StepsList {
-	return &StepsList{}
+func NewStepList(stepsData ...*StepData) *StepsList {
+	list := &StepsList{}
+	for _, data := range stepsData {
+		list.Append(data)
+	}
+	return list
 }
 
 // Append adds a new step to the workflow.
