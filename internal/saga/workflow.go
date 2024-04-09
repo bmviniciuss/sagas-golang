@@ -18,7 +18,7 @@ func (w *Workflow) ConsumerEventTypes() map[string]uuid.UUID {
 	ts := map[string]uuid.UUID{}
 	steps := w.Steps.ToList()
 	for _, step := range steps {
-		for key := range consumerActionTypes {
+		for key := range responseActionTypes {
 			ts[fmt.Sprintf("%s.%s.%s", w.Name, step.Name, key.String())] = w.ID
 		}
 	}

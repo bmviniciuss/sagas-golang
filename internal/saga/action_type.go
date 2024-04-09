@@ -18,9 +18,10 @@ func (at ActionType) IsCompensated() bool {
 	return at == CompensatedActionType
 }
 
-// func (at ActionType) IsResponseType() bool {
-
-// }
+func (at ActionType) IsResponseType() bool {
+	_, ok := responseActionTypes[at]
+	return ok
+}
 
 const (
 	// requests
@@ -33,9 +34,9 @@ const (
 )
 
 var (
-	consumerActionTypes = map[ActionType]struct{}{
-		SuccessActionType:     struct{}{},
-		FailureActionType:     struct{}{},
-		CompensatedActionType: struct{}{},
+	responseActionTypes = map[ActionType]struct{}{
+		SuccessActionType:     {},
+		FailureActionType:     {},
+		CompensatedActionType: {},
 	}
 )
