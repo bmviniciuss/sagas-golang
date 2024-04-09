@@ -2,6 +2,7 @@ package saga
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -467,5 +468,63 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		assert.Nil(t, step)
 		assert.Error(t, err)
 		assert.Equal(t, ErrUnknownActionType, err)
+	})
+}
+
+func TestWorkflow_ConsumerEventTypes(t *testing.T) {
+	t.Run("should return a empty map if there are no steps in the workflow", func(t *testing.T) {
+		workflow := Workflow{
+			ID:           uuid.New(),
+			Name:         "create_order_saga",
+			ReplyChannel: "kfk.dev.create_order_saga.reply",
+			Steps:        NewStepList(),
+		}
+
+		eventTypes := workflow.ConsumerEventTypes()
+		assert.Empty(t, eventTypes)
+	})
+	t.Run("should return map of event types for consumer", func(t *testing.T) {
+		steps := NewStepList(
+			&StepData{
+				ID:          uuid.New(),
+				Name:        "create_order",
+				ServiceName: "order",
+				Compensable: true,
+			},
+			&StepData{
+				ID:          uuid.New(),
+				Name:        "verify_client",
+				ServiceName: "client",
+				Compensable: true,
+			},
+		)
+
+		workflow := Workflow{
+			ID:           uuid.New(),
+			Name:         "create_order_saga",
+			ReplyChannel: "kfk.dev.create_order_saga.reply",
+			Steps:        steps,
+		}
+
+		eventTypes := workflow.ConsumerEventTypes()
+		fmt.Println(eventTypes)
+		assert.Equal(t, len(eventTypes), 6)
+		for _, step := range eventTypes {
+			assert.Equal(t, workflow.ID, step)
+		}
+		expectedEventTypes := []string{
+			"create_order_saga.create_order.success",
+			"create_order_saga.create_order.failure",
+			"create_order_saga.create_order.compensated",
+			"create_order_saga.verify_client.success",
+			"create_order_saga.verify_client.failure",
+			"create_order_saga.verify_client.compensated",
+		}
+		for _, eventType := range expectedEventTypes {
+			fmt.Println(eventTypes[eventType])
+			_, ok := eventTypes[eventType]
+			assert.True(t, ok)
+		}
+
 	})
 }
