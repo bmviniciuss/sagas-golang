@@ -64,18 +64,36 @@ type Step struct {
 	prev *Step
 }
 
-func (s Step) Next() (*Step, bool) {
+func (s *Step) Next() (*Step, bool) {
 	if s.next == nil {
 		return nil, false
 	}
 	return s.next, true
 }
 
-func (s Step) Previous() (*Step, bool) {
+func (s *Step) Previous() (*Step, bool) {
 	if s.prev == nil {
 		return nil, false
 	}
 	return s.prev, true
+}
+
+// FirstCompensableStep returns the first compensable step in the workflow before the current step or the current step itself.
+//
+// if the current step is the first compensable step, it returns the current step
+//
+// if the current step is not compensable, it returns the first compensable step before the current step
+//
+// if there are no compensable steps before the current step, it returns nil
+func (s *Step) FirstCompensableStep() (*Step, bool) {
+	current := s
+	for current != nil {
+		if current.Compensable {
+			return current, true
+		}
+		current = current.prev
+	}
+	return nil, false
 }
 
 type StepDoubleLinkedList struct {
@@ -88,7 +106,7 @@ func NewStepList() *StepDoubleLinkedList {
 	return &StepDoubleLinkedList{}
 }
 
-func (sl *StepDoubleLinkedList) Append(data *StepData) {
+func (sl *StepDoubleLinkedList) Append(data *StepData) *Step {
 	newNode := &Step{
 		StepData: data,
 		next:     nil,
@@ -98,13 +116,14 @@ func (sl *StepDoubleLinkedList) Append(data *StepData) {
 		sl.head = newNode
 		sl.tail = newNode
 		sl.len++
-		return
+		return newNode
 	}
 
 	newNode.prev = sl.tail
 	sl.tail.next = newNode
 	sl.tail = newNode
 	sl.len++
+	return newNode
 }
 
 func (sl *StepDoubleLinkedList) Head() (*Step, bool) {
