@@ -25,6 +25,20 @@ func (at ActionType) IsResponseType() bool {
 	return ok
 }
 
+// TODO: add unit tests
+func (at ActionType) Next() (ActionType, error) {
+	switch at {
+	case SuccessActionType:
+		return RequestActionType, nil
+	case FailureActionType:
+		return CompensateActionType, nil
+	case CompensatedActionType:
+		return CompensateActionType, nil
+	default:
+		return ActionType(""), fmt.Errorf("unable to get next action type for type: %s", at)
+	}
+}
+
 const (
 	// requests
 	RequestActionType    ActionType = "request"

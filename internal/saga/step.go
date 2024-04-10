@@ -2,6 +2,7 @@ package saga
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -62,6 +63,10 @@ func (s *Step) FirstCompensableStep() (*Step, bool) {
 		current, _ = current.Previous()
 	}
 	return nil, false
+}
+
+func (s *Step) DestinationTopic() string {
+	return fmt.Sprintf("%s.request", s.ServiceName)
 }
 
 type StepsList struct {

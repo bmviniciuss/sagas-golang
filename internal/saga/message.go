@@ -55,16 +55,15 @@ type Message struct {
 }
 
 func NewMessage(
-	eventID uuid.UUID,
 	globalID uuid.UUID,
 	eventData map[string]interface{},
 	metadata map[string]string,
-	workflow Workflow,
-	step Step,
+	workflow *Workflow,
+	step *Step,
 	action ActionType,
 ) *Message {
 	return &Message{
-		EventID:  eventID,
+		EventID:  uuid.New(),
 		GlobalID: globalID,
 		EventType: EventType{
 			SagaName: workflow.Name,
