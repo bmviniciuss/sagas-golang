@@ -8,25 +8,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// import (
-// 	"context"
-// 	"fmt"
-// 	"testing"
+type payloadBuilderMock struct{}
 
-// 	"github.com/google/uuid"
-// 	"github.com/stretchr/testify/assert"
-// )
+func (pb *payloadBuilderMock) Build(ctx context.Context, data any, action ActionType) (map[string]interface{}, error) {
+	return map[string]interface{}{}, nil
+}
 
 func TestWorkflow_GetNextStep(t *testing.T) {
+
 	t.Run("should return error when current step is not found in message workflow", func(t *testing.T) {
 		steps := NewStepList(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 		workflow := Workflow{
 			ID:           uuid.New(),
@@ -65,13 +61,11 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 
 	t.Run("should return nil when message action type is success and there are no more steps", func(t *testing.T) {
 		createOrderStep := &StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		}
 		steps := NewStepList(createOrderStep)
 		workflow := Workflow{
@@ -112,23 +106,19 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for successful message, should return next step when exists", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		verifyClient := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "verify_client",
-			ServiceName: "client",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "verify_client",
+			ServiceName:    "client",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		workflow := Workflow{
@@ -170,23 +160,19 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for error message type, should return the first compensable step [itself]", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		_ = steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "verify_client",
-			ServiceName: "client",
-			Compensable: false,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "verify_client",
+			ServiceName:    "client",
+			Compensable:    false,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		workflow := Workflow{
@@ -228,23 +214,19 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for error message type, should return the the first compensable step [previous]", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "verify_client",
-			ServiceName: "client",
-			Compensable: false,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "verify_client",
+			ServiceName:    "client",
+			Compensable:    false,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		workflow := Workflow{
@@ -286,23 +268,19 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for error message type, should return nil if there are no compensable steps", func(t *testing.T) {
 		steps := NewStepList()
 		_ = steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: false,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    false,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "verify_client",
-			ServiceName: "client",
-			Compensable: false,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "verify_client",
+			ServiceName:    "client",
+			Compensable:    false,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		workflow := Workflow{
@@ -344,23 +322,19 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for compensated message type, should return nil if there are no more compensable steps", func(t *testing.T) {
 		steps := NewStepList()
 		_ = steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: false,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    false,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "verify_client",
-			ServiceName: "client",
-			Compensable: false,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "verify_client",
+			ServiceName:    "client",
+			Compensable:    false,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		workflow := Workflow{
@@ -402,23 +376,19 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for compensated message type, should return the first compensable step", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "verify_client",
-			ServiceName: "client",
-			Compensable: false,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "verify_client",
+			ServiceName:    "client",
+			Compensable:    false,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		workflow := Workflow{
@@ -460,13 +430,11 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for ErrUnknownActionType if event action type is not processable", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:          uuid.New(),
-			Name:        "create_order",
-			ServiceName: "order",
-			Compensable: true,
-			PayloadBuilder: func(ctx context.Context, data any) (map[string]interface{}, error) {
-				return map[string]interface{}{}, nil
-			},
+			ID:             uuid.New(),
+			Name:           "create_order",
+			ServiceName:    "order",
+			Compensable:    true,
+			PayloadBuilder: &payloadBuilderMock{},
 		})
 
 		workflow := Workflow{

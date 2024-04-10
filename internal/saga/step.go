@@ -6,6 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
+// PayloadBuilder is an interface for building the payload of a step in the workflow.
+type PayloadBuilder interface {
+	// Build builds the payload of a step in the workflow based on the given data and action.
+	Build(ctx context.Context, data any, action ActionType) (map[string]interface{}, error)
+}
+
 type (
 	// StepData represents the data of a step in the workflow.
 	StepData struct {
@@ -13,7 +19,7 @@ type (
 		Name           string
 		ServiceName    string
 		Compensable    bool
-		PayloadBuilder func(ctx context.Context, data any) (map[string]interface{}, error)
+		PayloadBuilder PayloadBuilder
 	}
 
 	// Step represents a step in the workflow.
