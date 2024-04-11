@@ -59,7 +59,7 @@ func (w *Workflow) ProcessMessage(ctx context.Context, message *saga.Message, wo
 		return err
 	}
 
-	err = w.publisher.Publish(ctx, workflow.ReplyChannel, jsonMsg)
+	err = w.publisher.Publish(ctx, nextStep.DestinationTopic(nextActionType), jsonMsg)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return err
