@@ -8,7 +8,7 @@ import (
 )
 
 type Workflow struct {
-	ID           uuid.UUID
+	ID           uuid.UUID // TODO: add version
 	Name         string
 	Steps        *StepsList
 	ReplyChannel string
