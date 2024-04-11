@@ -65,8 +65,8 @@ func (s *Step) FirstCompensableStep() (*Step, bool) {
 	return nil, false
 }
 
-func (s *Step) DestinationTopic() string {
-	return fmt.Sprintf("%s.request", s.ServiceName)
+func (s *Step) DestinationTopic(actionType ActionType) string {
+	return fmt.Sprintf("service.%s.%s", s.ServiceName, actionType.String())
 }
 
 type StepsList struct {
