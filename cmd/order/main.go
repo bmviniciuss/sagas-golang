@@ -46,7 +46,10 @@ func main() {
 	_ = streaming.NewPublisher(lggr, &kafka.ConfigMap{
 		"bootstrap.servers": bootstrapServers,
 	})
-	handler := NewOrderMessageHandler(lggr)
+	publisher := streaming.NewPublisher(lggr, &kafka.ConfigMap{
+		"bootstrap.servers": bootstrapServers,
+	})
+	handler := NewOrderMessageHandler(lggr, *publisher)
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{
 		"bootstrap.servers":        bootstrapServers,
 		"broker.address.family":    "v4",
