@@ -1,25 +1,17 @@
 {
-  "metadata": {
-    "global_id": "2780cf76-1829-42b2-bdb6-40c41b6a9ccb",
-    "client_id": "7c1b2ca5-cfde-4ea7-adb7-9a06d34125f9"
-  },
-  "event_id": "f1763d99-4bdd-41be-acee-c71e8d1c8d22",
-  "event_type": "create_order_saga.create_order.request",
-  "event_data": {
-    "id": "a5475997-2458-41d1-a624-0a1e471bc0b9"
-  },
+  "global_id": "5665dd96-7ba8-405e-a477-b0e322efb8dc",
+  "event_id": "4861edb4-85d6-439a-b485-4e0cbae2dcbb",
+  "event_type": "create_order.create_order.success",
   "saga": {
-    "id": "22fb74c3-82e8-4140-ab99-d9c086581f2d",
-    "name": "create_order_saga",
-    "reply_channel": "kfk.dev.create_order_saga.reply",
+    "id": "2ef23373-9c01-4603-be2f-8e80552eb9a4",
+    "name": "create_order",
+    "reply_channel": "saga.create_order.v1.response",
     "step": {
-      "id": "d8073562-d544-4290-aa00-4c919a554e27",
-      "name": "create_order"
-    },
-    "metadata": {
-      "verify_step": {
-        "validation_external_id": "b7dd7bbe-6463-4b71-b33f-02682b9293dd"
-      }
+      "id": "4a4578ff-3602-4ad0-b262-6827c6ebc985",
+      "name": "create_order",
+      "action": "success"
     }
-  }
+  },
+  "event_data": {},
+  "metadata": {}
 }
