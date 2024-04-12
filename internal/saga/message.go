@@ -111,3 +111,33 @@ func NewMessage(
 		Metadata:  metadata,
 	}
 }
+
+func NewParticipantMessage(
+	globalID uuid.UUID,
+	eventData map[string]interface{},
+	metadata map[string]string,
+	action ActionType,
+	message *Message,
+) *Message {
+	return &Message{
+		EventID:  uuid.New(),
+		GlobalID: globalID,
+		EventType: EventType{
+			SagaName: message.Saga.Name,
+			StepName: message.Saga.Step.Name,
+			Action:   action,
+		},
+		Saga: Saga{
+			ID:           message.Saga.ID,
+			Name:         message.Saga.Name,
+			ReplyChannel: message.Saga.ReplyChannel,
+			Step: SagaStep{
+				ID:     message.Saga.Step.ID,
+				Name:   message.Saga.Step.Name,
+				Action: action,
+			},
+		},
+		EventData: eventData,
+		Metadata:  metadata,
+	}
+}
