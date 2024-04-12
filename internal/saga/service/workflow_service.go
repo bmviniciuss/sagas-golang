@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -66,5 +67,38 @@ func (w *Workflow) ProcessMessage(ctx context.Context, message *saga.Message, wo
 	}
 
 	l.Infof("Successfully processed message and produce")
+	return nil
+}
+
+func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, _ any) error {
+	l := w.logger
+	l.Info("Starting workflow")
+	firstStep, ok := workflow.Steps.Head()
+	if !ok {
+		l.Info("There are no steps to process. Successfully finished workflow.")
+		return nil
+	}
+	actionType := saga.RequestActionType
+	payload, err := firstStep.PayloadBuilder.Build(ctx, nil, actionType)
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error while building payload")
+		return err
+	}
+	globalID := uuid.New()
+	l.Infof("Starting saga with ID: %s", globalID.String())
+	firstMsg := saga.NewMessage(globalID, payload, nil, workflow, firstStep, actionType)
+	jsonMsg, err := json.Marshal(firstMsg)
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error while marshalling message")
+		return err
+	}
+
+	err = w.publisher.Publish(ctx, firstStep.DestinationTopic(actionType), jsonMsg)
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error publishing message to destination")
+		return err
+	}
+
+	l.Info("Successfully started workflow")
 	return nil
 }

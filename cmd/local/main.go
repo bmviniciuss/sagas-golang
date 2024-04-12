@@ -78,6 +78,12 @@ func main() {
 		"bootstrap.servers": bootstrapServers,
 	})
 	workflowService := service.NewWorkflow(lggr, publisher)
+
+	err = workflowService.Start(ctx, &workflow, nil)
+	if err != nil {
+		lggr.With(zap.Error(err)).Fatal("Got error starting workflow")
+	}
+
 	messageHandler := streaming.NewMessageHandler(lggr, []saga.Workflow{workflow}, workflowService, idempotenceService)
 
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{
