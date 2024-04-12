@@ -1,6 +1,9 @@
 package saga
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -45,13 +48,37 @@ func (e *EventType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type Message struct {
-	GlobalID  uuid.UUID              `json:"global_id"`
-	EventID   uuid.UUID              `json:"event_id"`
-	EventType EventType              `json:"event_type"`
-	Saga      Saga                   `json:"saga"`
-	EventData map[string]interface{} `json:"event_data"`
-	Metadata  map[string]string      `json:"metadata"`
+type (
+	Message struct {
+		GlobalID  uuid.UUID              `json:"global_id"`
+		EventID   uuid.UUID              `json:"event_id"`
+		EventType EventType              `json:"event_type"`
+		Saga      Saga                   `json:"saga"`
+		EventData map[string]interface{} `json:"event_data"`
+		Metadata  map[string]string      `json:"metadata"`
+	}
+
+	Saga struct {
+		ID           uuid.UUID `json:"id"`
+		Name         string    `json:"name"`
+		ReplyChannel string    `json:"reply_channel"`
+		Step         SagaStep  `json:"step"`
+	}
+
+	SagaStep struct {
+		ID     uuid.UUID  `json:"id"`
+		Name   string     `json:"name"`
+		Action ActionType `json:"action"`
+	}
+)
+
+func (m *Message) Hash() (string, error) {
+	dataBytes, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	sha256 := sha256.New()
+	return hex.EncodeToString(sha256.Sum(dataBytes)), nil
 }
 
 func NewMessage(
@@ -83,17 +110,4 @@ func NewMessage(
 		EventData: eventData,
 		Metadata:  metadata,
 	}
-}
-
-type Saga struct {
-	ID           uuid.UUID `json:"id"`
-	Name         string    `json:"name"`
-	ReplyChannel string    `json:"reply_channel"`
-	Step         SagaStep  `json:"step"`
-}
-
-type SagaStep struct {
-	ID     uuid.UUID  `json:"id"`
-	Name   string     `json:"name"`
-	Action ActionType `json:"action"`
 }
