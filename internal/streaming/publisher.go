@@ -2,11 +2,12 @@ package streaming
 
 import (
 	"context"
+
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.uber.org/zap"
 )
 
-type Publisher struct {
+type Publisher struct { // TODO: add interface
 	logger *zap.SugaredLogger
 	kfkCfg *kafka.ConfigMap
 }
