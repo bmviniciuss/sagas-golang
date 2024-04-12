@@ -2,7 +2,6 @@ package saga
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -78,7 +77,8 @@ func (m *Message) Hash() (string, error) {
 		return "", err
 	}
 	sha256 := sha256.New()
-	return hex.EncodeToString(sha256.Sum(dataBytes)), nil
+	hash := sha256.Sum(dataBytes)
+	return fmt.Sprintf("%x", hash), nil
 }
 
 func NewMessage(

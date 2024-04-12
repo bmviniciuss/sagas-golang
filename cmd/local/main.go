@@ -2,17 +2,20 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
+	"github.com/bmviniciuss/sagas-golang/internal/adapters/infra/kv"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/bmviniciuss/sagas-golang/internal/saga/service"
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 )
 
 type CreateOrderPayloadBuilder struct {
@@ -62,11 +65,20 @@ func main() {
 		group            = "sagas-golang"
 	)
 
+	redisConn := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	err := redisConn.Ping(ctx).Err()
+	if err != nil {
+		lggr.With(zap.Error(err)).Fatal("Got error connecting to Redis")
+	}
+
+	idempotenceService := kv.NewAdapter(lggr, redisConn)
 	publisher := streaming.NewPublisher(lggr, &kafka.ConfigMap{
 		"bootstrap.servers": bootstrapServers,
 	})
 	workflowService := service.NewWorkflow(lggr, publisher)
-	messageHandler := streaming.NewMessageHandler(lggr, []saga.Workflow{workflow}, workflowService)
+	messageHandler := streaming.NewMessageHandler(lggr, []saga.Workflow{workflow}, workflowService, idempotenceService)
 
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{
 		"bootstrap.servers":        bootstrapServers,
