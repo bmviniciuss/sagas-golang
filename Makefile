@@ -14,3 +14,6 @@ dep:
 
 run:
 	go run ./cmd/local/
+
+run-orders:
+	go run ./cmd/order/

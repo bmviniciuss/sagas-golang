@@ -33,7 +33,7 @@ func main() {
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	lggr := logger.New()
+	lggr := logger.New("orchestrator-service")
 	defer lggr.Sync()
 
 	redisConn := redis.NewClient(&redis.Options{

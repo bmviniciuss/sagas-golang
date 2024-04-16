@@ -5,7 +5,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func New() *zap.SugaredLogger {
+func New(service string) *zap.SugaredLogger {
 	// Configure logger options
 	config := zap.Config{
 		Encoding:         "json",
@@ -29,6 +29,7 @@ func New() *zap.SugaredLogger {
 
 	// Create sugared logger
 	sugaredLogger := logger.Sugar()
+	sugaredLogger.With(zap.String("service_name", service))
 
 	return sugaredLogger
 }
