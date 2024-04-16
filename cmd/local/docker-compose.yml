@@ -10,8 +10,8 @@ services:
       POSTGRES_PASSWORD: sagas
       POSTGRES_DB: sagas
     volumes:
-      - ./pg_data:/var/lib/postgresql/data
-      - ../../ddl:
+      - pg_data:/var/lib/postgresql/data
+      - ./ddl:/docker-entrypoint-initdb.d
     networks:
       - net
 

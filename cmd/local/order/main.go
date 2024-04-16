@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/adapters/repositores/order"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/api"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/usecases"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
@@ -26,6 +30,15 @@ func main() {
 
 	lggr := logger.New("orders-service")
 	defer lggr.Sync()
+
+	lggr.Info("Starting Order Service")
+	dbpool, err := pgxpool.New(context.Background(), "postgres://sagas:sagas@localhost:5432/sagas")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbpool.Close()
+	lggr.Info("Connected to database")
 
 	// var (
 	// 	bootstrapServers = "localhost:9092"
@@ -70,8 +83,10 @@ func main() {
 	// }()
 
 	var (
-		apiHandlers = api.NewHandlers(lggr)
-		httpServer  = newApiServer(":3001", apiHandlers)
+		ordersRepository = order.NewRepositoryAdapter(lggr, dbpool)
+		listUseCase      = usecases.NewListOrders(lggr, ordersRepository)
+		apiHandlers      = api.NewHandlers(lggr, listUseCase)
+		httpServer       = newApiServer(":3001", apiHandlers)
 	)
 
 	go func() {
