@@ -11,3 +11,6 @@ test/cover:
 
 dep:
 	go mod download
+
+run:
+	go run ./cmd/local/

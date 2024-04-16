@@ -13,6 +13,11 @@ type Publisher interface {
 	Publish(ctx context.Context, destination string, data []byte) error
 }
 
+type Port interface {
+	ProcessMessage(ctx context.Context, message *saga.Message, workflow *saga.Workflow) error
+	Start(ctx context.Context, workflow *saga.Workflow, _ any) (*uuid.UUID, error)
+}
+
 type Workflow struct {
 	logger    *zap.SugaredLogger
 	publisher Publisher
@@ -70,19 +75,19 @@ func (w *Workflow) ProcessMessage(ctx context.Context, message *saga.Message, wo
 	return nil
 }
 
-func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, _ any) error {
+func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, _ any) (*uuid.UUID, error) {
 	l := w.logger
 	l.Info("Starting workflow")
 	firstStep, ok := workflow.Steps.Head()
 	if !ok {
 		l.Info("There are no steps to process. Successfully finished workflow.")
-		return nil
+		return nil, nil
 	}
 	actionType := saga.RequestActionType
 	payload, err := firstStep.PayloadBuilder.Build(ctx, nil, actionType)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error while building payload")
-		return err
+		return nil, err
 	}
 	globalID := uuid.New()
 	l.Infof("Starting saga with ID: %s", globalID.String())
@@ -90,15 +95,13 @@ func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, _ any) er
 	jsonMsg, err := json.Marshal(firstMsg)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error while marshalling message")
-		return err
+		return nil, err
 	}
-
 	err = w.publisher.Publish(ctx, firstStep.DestinationTopic(actionType), jsonMsg)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error publishing message to destination")
-		return err
+		return nil, err
 	}
-
 	l.Info("Successfully started workflow")
-	return nil
+	return &globalID, nil
 }
