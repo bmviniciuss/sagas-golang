@@ -13,7 +13,7 @@ dep:
 	go mod download
 
 run:
-	go run ./cmd/local/
+	go run ./cmd/local/orchestrator/
 
 run-orders:
-	go run ./cmd/order/
+	go run ./cmd/local/order/

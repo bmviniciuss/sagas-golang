@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bmviniciuss/sagas-golang/cmd/local/api"
-	"github.com/bmviniciuss/sagas-golang/cmd/local/workflows"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/api"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/workflows"
 	"github.com/bmviniciuss/sagas-golang/internal/adapters/infra/kv"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
 	"github.com/bmviniciuss/sagas-golang/internal/saga"

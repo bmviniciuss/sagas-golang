@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: sagas
+      POSTGRES_PASSWORD: sagas
+      POSTGRES_DB: sagas
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data
+      - ../../ddl:
+    networks:
+      - net
+
   redis:
     image: redis
     container_name: redis
@@ -82,3 +98,6 @@ services:
 networks:
   net:
     driver: bridge
+
+volumes:
+  pg_data:

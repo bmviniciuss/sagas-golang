@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bmviniciuss/sagas-golang/cmd/order/api"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/api"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
 	"go.uber.org/zap"
 )
