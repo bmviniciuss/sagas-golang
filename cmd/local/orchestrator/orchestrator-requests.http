@@ -4,5 +4,5 @@ GET http://{{path}}/v1/health
 Content-Type: application/json
 
 ###
-POST http://{{path}}/v1/orders
+POST http://{{path}}/v1/create-orders
 Content-Type: application/json

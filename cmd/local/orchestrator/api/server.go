@@ -15,6 +15,6 @@ func NewRouter(handlers HandlersPort) *Router {
 func (r *Router) Build() *chi.Mux {
 	router := chi.NewRouter()
 	router.Get("/v1/health", r.handlers.Health)
-	router.Post("/v1/orders", r.handlers.CreateOrder)
+	router.Post("/v1/create-orders", r.handlers.CreateOrder)
 	return router
 }
