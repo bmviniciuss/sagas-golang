@@ -46,7 +46,7 @@ func main() {
 
 	var (
 		bootstrapServers    = "localhost:9092"
-		topics              = strings.Split("saga.create_order.v1.response", ",")
+		topics              = strings.Split("saga.create-order.v1.response", ",")
 		consumerGroupID     = "sagas-golang"
 		publisher           = newPublisher(lggr, bootstrapServers)
 		createOrderWorkflow = workflows.NewCreateOrderV1()

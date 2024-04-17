@@ -18,7 +18,7 @@ func NewCreateOrderV1() *saga.Workflow {
 	return &saga.Workflow{
 		ID:           uuid.MustParse("2ef23373-9c01-4603-be2f-8e80552eb9a4"),
 		Name:         "create_order",
-		ReplyChannel: "saga.create_order.v1.response",
+		ReplyChannel: "saga.create-order.v1.response",
 		Steps: saga.NewStepList(
 			&saga.StepData{
 				ID:             uuid.MustParse("4a4578ff-3602-4ad0-b262-6827c6ebc985"),
