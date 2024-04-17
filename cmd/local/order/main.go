@@ -6,22 +6,28 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/adapters/repositores/order"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/api"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/usecases"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/handlers"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
+	"github.com/bmviniciuss/sagas-golang/internal/streaming"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
 func main() {
 	var (
-		_, cancel = context.WithCancel(context.Background())
-		sigCh     = make(chan os.Signal, 1)
-		errCh     = make(chan error, 1)
+		ctx, cancel = context.WithCancel(context.Background())
+		sigCh       = make(chan os.Signal, 1)
+		errCh       = make(chan error, 1)
 	)
 	defer cancel()
 	defer close(sigCh)
@@ -40,53 +46,57 @@ func main() {
 	defer dbpool.Close()
 	lggr.Info("Connected to database")
 
-	// var (
-	// 	bootstrapServers = "localhost:9092"
-	// 	topics           = strings.Split("service.order.request", ",")
-	// 	group            = "sagas-golang"
-	// )
-
-	// redisConn := redis.NewClient(&redis.Options{
-	// 	Addr: "localhost:6379",
-	// })
-	// err := redisConn.Ping(ctx).Err()
-	// if err != nil {
-	// 	lggr.With(zap.Error(err)).Fatal("Got error connecting to Redis")
-	// }
-
-	// _ = kv.NewAdapter(lggr, redisConn)
-	// _ = streaming.NewPublisher(lggr, &kafka.ConfigMap{
-	// 	"bootstrap.servers": bootstrapServers,
-	// })
-	// publisher := streaming.NewPublisher(lggr, &kafka.ConfigMap{
-	// 	"bootstrap.servers": bootstrapServers,
-	// })
-	// handler := NewOrderMessageHandler(lggr, *publisher)
-	// consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{
-	// 	"bootstrap.servers":        bootstrapServers,
-	// 	"broker.address.family":    "v4",
-	// 	"group.id":                 group,
-	// 	"session.timeout.ms":       6000,
-	// 	"auto.offset.reset":        "earliest",
-	// 	"enable.auto.offset.store": false,
-	// 	"enable.auto.commit":       true,
-	// }, handler)
-	// if err != nil {
-	// 	lggr.With(zap.Error(err)).Fatal("Got error creating consumer")
-	// }
-
-	// go func() {
-	// 	if err := consumer.Start(ctx); err != nil {
-	// 		lggr.With(zap.Error(err)).Fatal("Got in consumer")
-	// 		errCh <- err
-	// 	}
-	// }()
-
+	redisConn := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	err = redisConn.Ping(ctx).Err()
+	if err != nil {
+		lggr.With(zap.Error(err)).Fatal("Got error connecting to Redis")
+	}
 	var (
 		ordersRepository = order.NewRepositoryAdapter(lggr, dbpool)
-		listUseCase      = usecases.NewListOrders(lggr, ordersRepository)
-		apiHandlers      = api.NewHandlers(lggr, listUseCase)
-		httpServer       = newApiServer(":3001", apiHandlers)
+	)
+
+	var (
+		bootstrapServers = "localhost:9092"
+		topics           = strings.Split("service.order.request", ",")
+		group            = "order-service-group"
+	)
+
+	publisher := streaming.NewPublisher(lggr, &kafka.ConfigMap{
+		"bootstrap.servers": bootstrapServers,
+	})
+
+	createOrderUseCase := usecases.NewCreateOrder(lggr, ordersRepository)
+	createOrderHandler := handlers.NewCreateOrderHandler(lggr, createOrderUseCase)
+	usecasesMap := map[string]application.MessageHandler{
+		"create_order.create_order.request": createOrderHandler,
+	}
+	handler := NewOrderMessageHandler(lggr, *publisher, usecasesMap)
+	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{
+		"bootstrap.servers":        bootstrapServers,
+		"broker.address.family":    "v4",
+		"group.id":                 group,
+		"session.timeout.ms":       6000,
+		"auto.offset.reset":        "earliest",
+		"enable.auto.offset.store": false,
+		"enable.auto.commit":       true,
+	}, handler)
+	if err != nil {
+		lggr.With(zap.Error(err)).Fatal("Got error creating consumer")
+	}
+
+	go func() {
+		if err := consumer.Start(ctx); err != nil {
+			lggr.With(zap.Error(err)).Fatal("Got in consumer")
+			errCh <- err
+		}
+	}()
+
+	var (
+		listUseCase = usecases.NewListOrders(lggr, ordersRepository)
+		apiHandlers = api.NewHandlers(lggr, listUseCase)
+		httpServer  = newApiServer(":3001", apiHandlers)
 	)
 
 	go func() {

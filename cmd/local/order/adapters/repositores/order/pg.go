@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/repositories"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/domain/entities"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/presentation"
 	"github.com/bmviniciuss/sagas-golang/pkg/utc"
 	"github.com/georgysavva/scany/v2/pgxscan"
@@ -82,4 +83,39 @@ func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, err
 		}
 	}
 	return ordersPresentation, nil
+}
+
+const insertOrderQuery = `
+INSERT INTO orders.orders (uuid, global_id, client_id, customer_id, total, currency_code, status, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+`
+
+func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) error {
+	lggr := r.lggr
+	lggr.Info("RepositoryAdapter.Insert")
+
+	db, err := r.pool.Acquire(ctx)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error acquiring connection")
+		return err
+	}
+	defer db.Release()
+
+	_, err = db.Exec(ctx, insertOrderQuery,
+		order.ID.String(),
+		order.GlobalID.String(),
+		order.ClientID.String(),
+		order.CustomerID.String(),
+		order.Total,
+		order.CurrencyCode,
+		order.Status.String(),
+		order.CreatedAt,
+		order.UpdatedAt,
+	)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error inserting order")
+		return err
+	}
+
+	return nil
 }
