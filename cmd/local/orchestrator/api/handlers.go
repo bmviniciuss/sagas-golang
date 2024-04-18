@@ -10,6 +10,7 @@ import (
 	"github.com/bmviniciuss/sagas-golang/pkg/responses"
 	"github.com/go-chi/render"
 	goval "github.com/go-playground/validator/v10"
+	"github.com/mitchellh/mapstructure"
 
 	"go.uber.org/zap"
 )
@@ -50,10 +51,10 @@ func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 type CreateOrderRequest struct {
-	CustomerID   string `json:"customer_id" validate:"required,uuid"`
-	Date         string `json:"date" validate:"required"`
-	Total        *int64 `json:"total" validate:"required,gt=0"`
-	CurrencyCode string `json:"currency_code" validate:"required"`
+	CustomerID   string `json:"customer_id" mapstructure:"customer_id" validate:"required,uuid"`
+	Date         string `json:"date" mapstructure:"date" validate:"required"`
+	Total        *int64 `json:"total" mapstructure:"total" validate:"required,gt=0"`
+	CurrencyCode string `json:"currency_code" mapstructure:"currency_code" validate:"required"`
 }
 
 func (h *Handlers) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +85,16 @@ func (h *Handlers) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	lggr.Infof("Received request: %+v", req)
 
-	globalID, err := h.workflowService.Start(r.Context(), h.createOrderWorkflow, nil)
+	data := map[string]interface{}{}
+	err = mapstructure.Decode(req, &data)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error decoding create order request to map")
+		errRes := responses.NewInternalServerErrorResponse(reqID)
+		responses.RenderError(w, r, errRes)
+		return
+	}
+
+	globalID, err := h.workflowService.Start(r.Context(), h.createOrderWorkflow, data)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error starting workflow")
 		errRes := responses.NewInternalServerErrorResponse(reqID)

@@ -50,7 +50,7 @@ func main() {
 		topics              = strings.Split("saga.create-order.v1.response", ",")
 		consumerGroupID     = "sagas-golang"
 		publisher           = newPublisher(lggr, bootstrapServers)
-		createOrderWorkflow = workflows.NewCreateOrderV1()
+		createOrderWorkflow = workflows.NewCreateOrderV1(lggr)
 		workflowService     = service.NewWorkflow(lggr, publisher)
 		idempotenceService  = kv.NewAdapter(lggr, redisConn)
 		messageHandler      = streaming.NewMessageHandler(lggr, []saga.Workflow{*createOrderWorkflow}, workflowService, idempotenceService)

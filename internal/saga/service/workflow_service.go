@@ -15,7 +15,7 @@ type Publisher interface {
 
 type Port interface {
 	ProcessMessage(ctx context.Context, message *saga.Message, workflow *saga.Workflow) error
-	Start(ctx context.Context, workflow *saga.Workflow, _ any) (*uuid.UUID, error)
+	Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error)
 }
 
 type Workflow struct {
@@ -75,7 +75,7 @@ func (w *Workflow) ProcessMessage(ctx context.Context, message *saga.Message, wo
 	return nil
 }
 
-func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, _ any) (*uuid.UUID, error) {
+func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error) {
 	l := w.logger
 	l.Info("Starting workflow")
 	firstStep, ok := workflow.Steps.Head()
@@ -84,7 +84,7 @@ func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, _ any) (*
 		return nil, nil
 	}
 	actionType := saga.RequestActionType
-	payload, err := firstStep.PayloadBuilder.Build(ctx, nil, actionType)
+	payload, err := firstStep.PayloadBuilder.Build(ctx, data, actionType)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error while building payload")
 		return nil, err

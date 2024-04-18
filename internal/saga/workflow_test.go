@@ -10,7 +10,7 @@ import (
 
 type payloadBuilderMock struct{}
 
-func (pb *payloadBuilderMock) Build(ctx context.Context, data any, action ActionType) (map[string]interface{}, error) {
+func (pb *payloadBuilderMock) Build(ctx context.Context, data map[string]interface{}, action ActionType) (map[string]interface{}, error) {
 	return map[string]interface{}{}, nil
 }
 
