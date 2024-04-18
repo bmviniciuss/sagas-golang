@@ -16,6 +16,7 @@ import (
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/bmviniciuss/sagas-golang/internal/saga/service"
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
+	"github.com/bmviniciuss/sagas-golang/pkg/validator"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -56,7 +57,8 @@ func main() {
 	)
 
 	var (
-		apiHandlers = api.NewHandlers(lggr, createOrderWorkflow, workflowService)
+		val         = validator.New()
+		apiHandlers = api.NewHandlers(lggr, createOrderWorkflow, workflowService, val)
 		httpServer  = newApiServer(":3000", apiHandlers)
 	)
 

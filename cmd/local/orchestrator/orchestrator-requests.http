@@ -6,3 +6,10 @@ Content-Type: application/json
 ###
 POST http://{{path}}/v1/create-orders
 Content-Type: application/json
+
+{
+  "customer_id": "135f7d8d-11da-4441-9860-b290ed0a8252",
+  "date": "2024-04-17T17:41:21.065Z",
+  "total": 10000,
+  "currency_code": "BRL"
+}
