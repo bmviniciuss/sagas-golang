@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/adapters/repositories/executions"
+	workflowrepo "github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/adapters/repositories/workflows"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/api"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/workflows"
 	"github.com/bmviniciuss/sagas-golang/internal/adapters/infra/kv"
@@ -46,20 +48,24 @@ func main() {
 	}
 
 	var (
-		bootstrapServers    = "localhost:9092"
-		topics              = strings.Split("saga.create-order.v1.response", ",")
-		consumerGroupID     = "sagas-golang"
-		publisher           = newPublisher(lggr, bootstrapServers)
-		createOrderWorkflow = workflows.NewCreateOrderV1(lggr)
-		workflowService     = service.NewWorkflow(lggr, publisher)
-		idempotenceService  = kv.NewAdapter(lggr, redisConn)
-		messageHandler      = streaming.NewMessageHandler(lggr, []saga.Workflow{*createOrderWorkflow}, workflowService, idempotenceService)
+		executionsRepository = executions.NewInmemRepository()
+		bootstrapServers     = "localhost:9092"
+		topics               = strings.Split("saga.create-order.v1.response", ",")
+		consumerGroupID      = "sagas-golang"
+		publisher            = newPublisher(lggr, bootstrapServers)
+		workflowService      = service.NewExecution(lggr, executionsRepository, publisher)
+		idempotenceService   = kv.NewAdapter(lggr, redisConn)
+		messageHandler       = streaming.NewMessageHandler(lggr, executionsRepository, workflowService, idempotenceService)
 	)
 
+	workflows := []saga.Workflow{
+		*workflows.NewCreateOrderV1(lggr),
+	}
 	var (
-		val         = validator.New()
-		apiHandlers = api.NewHandlers(lggr, createOrderWorkflow, workflowService, val)
-		httpServer  = newApiServer(":3000", apiHandlers)
+		workflowRepository = workflowrepo.NewInmemRepository(workflows)
+		val                = validator.New()
+		apiHandlers        = api.NewHandlers(lggr, workflowRepository, workflowService, val)
+		httpServer         = newApiServer(":3000", apiHandlers)
 	)
 
 	consumer, err := newConsumer(lggr, topics, bootstrapServers, consumerGroupID, messageHandler)

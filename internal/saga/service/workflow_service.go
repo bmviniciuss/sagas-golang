@@ -14,29 +14,72 @@ type Publisher interface {
 }
 
 type Port interface {
-	ProcessMessage(ctx context.Context, message *saga.Message, workflow *saga.Workflow) error
+	ProcessMessage(ctx context.Context, message *saga.Message, execution *saga.Execution) error
 	Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error)
 }
 
-type Workflow struct {
-	logger    *zap.SugaredLogger
-	publisher Publisher
+type Execution struct {
+	logger              *zap.SugaredLogger
+	executionRepository saga.ExecutionRepository
+	publisher           Publisher
 }
 
-func NewWorkflow(
+func NewExecution(
 	logger *zap.SugaredLogger,
+	executionRepository saga.ExecutionRepository,
 	publisher Publisher,
-) *Workflow {
-	return &Workflow{
-		logger:    logger,
-		publisher: publisher,
+) *Execution {
+	return &Execution{
+		logger:              logger,
+		executionRepository: executionRepository,
+		publisher:           publisher,
 	}
 }
 
+func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error) {
+	l := w.logger
+	l.Info("Starting workflow")
+	execution := saga.NewExecution(workflow)
+	l.Infof("Starting saga with ID: %s", execution.ID.String())
+	execution.SetState("input", data)
+	err := w.executionRepository.Save(ctx, execution)
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error while saving execution")
+		return nil, err
+	}
+
+	firstStep, ok := execution.Workflow.Steps.Head()
+	if !ok {
+		l.Info("There are no steps to process. Successfully finished workflow.")
+		return nil, nil
+	}
+	actionType := saga.RequestActionType
+	payload, err := firstStep.PayloadBuilder.Build(ctx, data, actionType)
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error while building payload")
+		return nil, err
+	}
+
+	firstMsg := saga.NewMessage(execution.ID, payload, nil, workflow, firstStep, actionType)
+	jsonMsg, err := firstMsg.ToJSON()
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error while marshalling message")
+		return nil, err
+	}
+	err = w.publisher.Publish(ctx, firstStep.DestinationTopic(actionType), jsonMsg)
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error publishing message to destination")
+		return nil, err
+	}
+	l.Info("Successfully started workflow")
+	return &execution.ID, nil
+}
+
 // TODO: add unit tests
-func (w *Workflow) ProcessMessage(ctx context.Context, message *saga.Message, workflow *saga.Workflow) error {
+func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, execution *saga.Execution) error {
 	l := w.logger
 	l.Infof("Processing message: %s", message.EventType.Action.String())
+	workflow := execution.Workflow
 	nextStep, err := workflow.GetNextStep(ctx, *message)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error while getting next step")
@@ -73,35 +116,4 @@ func (w *Workflow) ProcessMessage(ctx context.Context, message *saga.Message, wo
 
 	l.Infof("Successfully processed message and produce")
 	return nil
-}
-
-func (w *Workflow) Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error) {
-	l := w.logger
-	l.Info("Starting workflow")
-	firstStep, ok := workflow.Steps.Head()
-	if !ok {
-		l.Info("There are no steps to process. Successfully finished workflow.")
-		return nil, nil
-	}
-	actionType := saga.RequestActionType
-	payload, err := firstStep.PayloadBuilder.Build(ctx, data, actionType)
-	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while building payload")
-		return nil, err
-	}
-	globalID := uuid.New()
-	l.Infof("Starting saga with ID: %s", globalID.String())
-	firstMsg := saga.NewMessage(globalID, payload, nil, workflow, firstStep, actionType)
-	jsonMsg, err := json.Marshal(firstMsg)
-	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while marshalling message")
-		return nil, err
-	}
-	err = w.publisher.Publish(ctx, firstStep.DestinationTopic(actionType), jsonMsg)
-	if err != nil {
-		l.With(zap.Error(err)).Error("Got error publishing message to destination")
-		return nil, err
-	}
-	l.Info("Successfully started workflow")
-	return &globalID, nil
 }

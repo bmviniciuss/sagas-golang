@@ -47,6 +47,8 @@ func (e *EventType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// TODO: remove uuid from steps and workflows
+
 type (
 	Message struct {
 		GlobalID  uuid.UUID              `json:"global_id"`
@@ -79,6 +81,10 @@ func (m *Message) Hash() (string, error) {
 	sha256 := sha256.New()
 	hash := sha256.Sum(dataBytes)
 	return fmt.Sprintf("%x", hash), nil
+}
+
+func (m *Message) ToJSON() ([]byte, error) {
+	return json.Marshal(m)
 }
 
 func NewMessage(

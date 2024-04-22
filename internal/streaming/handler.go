@@ -18,30 +18,23 @@ type IdempotenceService interface {
 }
 
 type MessageHandler struct {
-	logger               *zap.SugaredLogger
-	eventTypeWorkflowMap map[string]saga.Workflow
-	workflowService      *service.Workflow
-	idempotenceService   IdempotenceService
+	logger              *zap.SugaredLogger
+	executionRepository saga.ExecutionRepository
+	workflowService     *service.Execution
+	idempotenceService  IdempotenceService
 }
 
 func NewMessageHandler(
 	logger *zap.SugaredLogger,
-	workflows []saga.Workflow,
-	workflowService *service.Workflow,
+	executionRepository saga.ExecutionRepository,
+	workflowService *service.Execution,
 	idempotenceService IdempotenceService,
 ) *MessageHandler {
-	eventTypeWorkflowMap := make(map[string]saga.Workflow)
-	for _, workflow := range workflows {
-		for eventType := range workflow.ConsumerEventTypes() {
-			eventTypeWorkflowMap[eventType] = workflow
-		}
-	}
-
 	return &MessageHandler{
-		logger:               logger,
-		eventTypeWorkflowMap: eventTypeWorkflowMap,
-		workflowService:      workflowService,
-		idempotenceService:   idempotenceService,
+		logger:              logger,
+		executionRepository: executionRepository,
+		workflowService:     workflowService,
+		idempotenceService:  idempotenceService,
 	}
 }
 
@@ -76,10 +69,15 @@ func (h *MessageHandler) Handle(ctx context.Context, msg *kafka.Message, commitF
 		return nil
 	}
 
-	// Get workflow
-	workflow, ok := h.eventTypeWorkflowMap[message.EventType.String()]
-	if !ok {
-		l.Infof("Got unknown event type %s", message.EventType.String())
+	// Get execution
+	execution, err := h.executionRepository.Find(ctx, message.Saga.ID.String())
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error getting workflow")
+		return err // TODO: handle error
+	}
+
+	if execution.IsEmpty() {
+		l.Info("execution not found. Message will be ignored")
 		err = commitFn()
 		if err != nil {
 			l.With(zap.Error(err)).Error("Got error committing message")
@@ -88,7 +86,7 @@ func (h *MessageHandler) Handle(ctx context.Context, msg *kafka.Message, commitF
 		return nil
 	}
 
-	err = h.workflowService.ProcessMessage(ctx, &message, &workflow)
+	err = h.workflowService.ProcessMessage(ctx, &message, execution)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error processing workflow message")
 		return err

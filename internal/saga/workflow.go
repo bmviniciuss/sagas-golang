@@ -3,6 +3,7 @@ package saga
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/google/uuid"
 )
@@ -12,6 +13,10 @@ type Workflow struct {
 	Name         string
 	Steps        *StepsList
 	ReplyChannel string
+}
+
+func (w *Workflow) IsEmpty() bool {
+	return reflect.DeepEqual(w, &Workflow{})
 }
 
 func (w *Workflow) ConsumerEventTypes() map[string]uuid.UUID {

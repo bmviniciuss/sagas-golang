@@ -21,10 +21,10 @@ type HandlersPort interface {
 }
 
 type Handlers struct {
-	logger              *zap.SugaredLogger
-	createOrderWorkflow *saga.Workflow
-	workflowService     service.Port
-	validator           *goval.Validate
+	logger             *zap.SugaredLogger
+	workflowRepository saga.WorkflowRepository
+	workflowService    service.Port
+	validator          *goval.Validate
 }
 
 var (
@@ -33,15 +33,15 @@ var (
 
 func NewHandlers(
 	logger *zap.SugaredLogger,
-	createOrderWorkflow *saga.Workflow,
+	workflowRepository saga.WorkflowRepository,
 	workflowService service.Port,
 	validator *goval.Validate,
 ) *Handlers {
 	return &Handlers{
-		logger:              logger,
-		createOrderWorkflow: createOrderWorkflow,
-		workflowService:     workflowService,
-		validator:           validator,
+		logger:             logger,
+		workflowRepository: workflowRepository,
+		workflowService:    workflowService,
+		validator:          validator,
 	}
 }
 
@@ -94,7 +94,22 @@ func (h *Handlers) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	globalID, err := h.workflowService.Start(r.Context(), h.createOrderWorkflow, data)
+	createOrderWorkflow, err := h.workflowRepository.Find(ctx, "create-order-v1")
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error finding workflow")
+		errRes := responses.NewInternalServerErrorResponse(reqID)
+		responses.RenderError(w, r, errRes)
+		return
+	}
+
+	if createOrderWorkflow.IsEmpty() {
+		lggr.Error("workflow not found")
+		errRes := responses.NewInternalServerErrorResponse(reqID)
+		responses.RenderError(w, r, errRes)
+		return
+	}
+
+	globalID, err := h.workflowService.Start(r.Context(), createOrderWorkflow, data)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error starting workflow")
 		errRes := responses.NewInternalServerErrorResponse(reqID)
