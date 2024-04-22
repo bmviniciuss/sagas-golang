@@ -50,7 +50,7 @@ func main() {
 	var (
 		executionsRepository = executions.NewInmemRepository()
 		bootstrapServers     = "localhost:9092"
-		topics               = strings.Split("saga.create-order.v1.response", ",")
+		topics               = strings.Split("saga.create_order_v1.response", ",")
 		consumerGroupID      = "sagas-golang"
 		publisher            = newPublisher(lggr, bootstrapServers)
 		workflowService      = service.NewExecution(lggr, executionsRepository, publisher)

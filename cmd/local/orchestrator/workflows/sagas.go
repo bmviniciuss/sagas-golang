@@ -9,7 +9,7 @@ import (
 func NewCreateOrderV1(logger *zap.SugaredLogger) *saga.Workflow {
 	return &saga.Workflow{
 		Name:         "create_order_v1",
-		ReplyChannel: "saga.create-order_v1.response",
+		ReplyChannel: "saga.create_order_v1.response",
 		Steps: saga.NewStepList(
 			&saga.StepData{
 				Name:           "create_order",
