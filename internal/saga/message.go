@@ -54,7 +54,7 @@ type (
 		EventType EventType              `json:"event_type"`
 		Saga      Saga                   `json:"saga"`
 		EventData map[string]interface{} `json:"event_data"`
-		Metadata  map[string]string      `json:"metadata"`
+		Metadata  map[string]string      `json:"metadata,omitempty"`
 	}
 	Saga struct {
 		Name         string   `json:"name"`
@@ -89,6 +89,11 @@ func NewMessage(
 	step *Step,
 	action ActionType,
 ) *Message {
+	data := make(map[string]interface{})
+	if eventData != nil {
+		data = eventData
+	}
+
 	return &Message{
 		EventID:  uuid.New(),
 		GlobalID: globalID,
@@ -105,7 +110,7 @@ func NewMessage(
 				Action: action,
 			},
 		},
-		EventData: eventData,
+		EventData: data,
 		Metadata:  metadata,
 	}
 }
@@ -117,6 +122,11 @@ func NewParticipantMessage(
 	action ActionType,
 	message *Message,
 ) *Message {
+	data := make(map[string]interface{})
+	if eventData != nil {
+		data = eventData
+	}
+
 	return &Message{
 		EventID:  uuid.New(),
 		GlobalID: globalID,
@@ -133,7 +143,7 @@ func NewParticipantMessage(
 				Action: action,
 			},
 		},
-		EventData: eventData,
+		EventData: data,
 		Metadata:  metadata,
 	}
 }
