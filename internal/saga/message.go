@@ -81,6 +81,10 @@ func (m *Message) ToJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+func (sp *SagaStep) StateKey() string {
+	return fmt.Sprintf("%s.%s", sp.Name, sp.Action.String())
+}
+
 func NewMessage(
 	globalID uuid.UUID,
 	eventData map[string]interface{},

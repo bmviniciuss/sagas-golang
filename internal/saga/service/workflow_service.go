@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/google/uuid"
@@ -76,44 +77,58 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 }
 
 // TODO: add unit tests
-func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, execution *saga.Execution) error {
-	l := w.logger
-	l.Infof("Processing message: %s", message.EventType.Action.String())
+func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, execution *saga.Execution) (err error) {
+	lggr := w.logger
+	lggr.Infof("Processing message: %s", message.EventType.Action.String())
 	workflow := execution.Workflow
+	execution.SetState(fmt.Sprintf("%s.response", message.Saga.Step.StateKey()), message.EventData)
+	err = w.executionRepository.Save(ctx, execution)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error saving execution state")
+		return err
+	}
+
 	nextStep, err := workflow.GetNextStep(ctx, *message)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while getting next step")
+		lggr.With(zap.Error(err)).Error("Got error while getting next step")
 		return err
 	}
 	if nextStep == nil {
-		l.Info("There are no more steps to process. Successfully finished workflow.")
+		lggr.Info("There are no more steps to process. Successfully finished workflow.")
 		return nil
 	}
-	l.Infof("Next step: %s", nextStep.Name)
+	lggr.Infof("Next step: %s", nextStep.Name)
 	nextActionType, err := message.EventType.Action.Next()
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while getting next action type")
+		lggr.With(zap.Error(err)).Error("Got error while getting next action type")
 		return err
 	}
-	l.Infof("Next step action type: %s", nextStep.Name)
-	payload, err := nextStep.PayloadBuilder.Build(ctx, message.EventData, nextActionType)
+	lggr.Infof("Next step action type: %s", nextStep.Name)
+	payload, err := nextStep.PayloadBuilder.Build(ctx, execution.State, nextActionType)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while building payload")
+		lggr.With(zap.Error(err)).Error("Got error while building payload")
 		return err
 	}
 	nextMsg := saga.NewMessage(message.GlobalID, payload, message.Metadata, workflow, nextStep, nextActionType)
+	execution.SetState(fmt.Sprintf("%s.request", nextMsg.Saga.Step.StateKey()), nextMsg.EventData)
+	err = w.executionRepository.Save(ctx, execution)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error saving execution next step request state")
+		return err
+	}
+
 	jsonMsg, err := json.Marshal(nextMsg)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while marshalling message")
+		lggr.With(zap.Error(err)).Error("Got error while marshalling message")
 		return err
 	}
 
 	err = w.publisher.Publish(ctx, nextStep.DestinationTopic(nextActionType), jsonMsg)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error publishing message to destination")
+		lggr.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return err
 	}
 
-	l.Infof("Successfully processed message and produce")
+	lggr.Infof("Successfully processed message and produce")
 	return nil
 }
