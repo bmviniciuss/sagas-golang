@@ -94,7 +94,7 @@ func (h *Handlers) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createOrderWorkflow, err := h.workflowRepository.Find(ctx, "create-order-v1")
+	createOrderWorkflow, err := h.workflowRepository.Find(ctx, "create_order_v1")
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error finding workflow")
 		errRes := responses.NewInternalServerErrorResponse(reqID)
