@@ -4,43 +4,30 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-
-	"github.com/google/uuid"
 )
-
-type Workflow struct {
-	ID           uuid.UUID // TODO: add version
-	Name         string
-	Steps        *StepsList
-	ReplyChannel string
-}
-
-func (w *Workflow) IsEmpty() bool {
-	return reflect.DeepEqual(w, &Workflow{})
-}
-
-func (w *Workflow) ConsumerEventTypes() map[string]uuid.UUID {
-	ts := map[string]uuid.UUID{}
-	steps := w.Steps.ToList()
-	for _, step := range steps {
-		for key := range responseActionTypes {
-			ts[fmt.Sprintf("%s.%s.%s", w.Name, step.Name, key.String())] = w.ID
-		}
-	}
-	return ts
-}
 
 var (
 	ErrCurrentStepNotFound = fmt.Errorf("current step not found in message workflow")
 	ErrUnknownActionType   = fmt.Errorf("unknown action type")
 )
 
+type Workflow struct {
+	Name         string
+	ReplyChannel string
+	Steps        *StepsList
+}
+
+// IsEmpty returns true if the workflow is empty
+func (w *Workflow) IsEmpty() bool {
+	return reflect.DeepEqual(w, &Workflow{})
+}
+
 // GetNextStep returns the next step in the workflow based on the message received and the current workflow
 // If the message is a success message, the next step in the workflow is returned or nil if there are no more steps
 // If the message is a failure message, the first compensation step is returned or nil if there are no more steps
 // If the message is a compensated message, the next compensable step in the workflow is returned or nil if there are no more steps
 func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, error) { // TODO: use ptr to workflow
-	currentStep, ok := w.Steps.GetStep(message.Saga.Step.ID)
+	currentStep, ok := w.Steps.GetStep(message.Saga.Step.Name)
 	if !ok {
 		return nil, ErrCurrentStepNotFound
 	}

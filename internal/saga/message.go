@@ -47,8 +47,6 @@ func (e *EventType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// TODO: remove uuid from steps and workflows
-
 type (
 	Message struct {
 		GlobalID  uuid.UUID              `json:"global_id"`
@@ -58,16 +56,12 @@ type (
 		EventData map[string]interface{} `json:"event_data"`
 		Metadata  map[string]string      `json:"metadata"`
 	}
-
 	Saga struct {
-		ID           uuid.UUID `json:"id"`
-		Name         string    `json:"name"`
-		ReplyChannel string    `json:"reply_channel"`
-		Step         SagaStep  `json:"step"`
+		Name         string   `json:"name"`
+		ReplyChannel string   `json:"reply_channel"`
+		Step         SagaStep `json:"step"`
 	}
-
 	SagaStep struct {
-		ID     uuid.UUID  `json:"id"`
 		Name   string     `json:"name"`
 		Action ActionType `json:"action"`
 	}
@@ -104,11 +98,9 @@ func NewMessage(
 			Action:   action,
 		},
 		Saga: Saga{
-			ID:           workflow.ID,
 			Name:         workflow.Name,
 			ReplyChannel: workflow.ReplyChannel,
 			Step: SagaStep{
-				ID:     step.ID,
 				Name:   step.Name,
 				Action: action,
 			},
@@ -134,11 +126,9 @@ func NewParticipantMessage(
 			Action:   action,
 		},
 		Saga: Saga{
-			ID:           message.Saga.ID,
 			Name:         message.Saga.Name,
 			ReplyChannel: message.Saga.ReplyChannel,
 			Step: SagaStep{
-				ID:     message.Saga.Step.ID,
 				Name:   message.Saga.Step.Name,
 				Action: action,
 			},

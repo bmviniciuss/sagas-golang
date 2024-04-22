@@ -3,8 +3,6 @@ package saga
 import (
 	"context"
 	"fmt"
-
-	"github.com/google/uuid"
 )
 
 // PayloadBuilder is an interface for building the payload of a step in the workflow.
@@ -16,9 +14,8 @@ type PayloadBuilder interface {
 type (
 	// StepData represents the data of a step in the workflow.
 	StepData struct {
-		ID             uuid.UUID
 		Name           string
-		ServiceName    string
+		ServiceName    string // TODO: rename to ResponsibleService
 		Compensable    bool
 		PayloadBuilder PayloadBuilder
 	}
@@ -111,10 +108,10 @@ func (sl *StepsList) Head() (*Step, bool) {
 }
 
 // GetStep returns the step with the given id.
-func (sl *StepsList) GetStep(id uuid.UUID) (*Step, bool) {
+func (sl *StepsList) GetStep(name string) (*Step, bool) {
 	current := sl.head
 	for current != nil {
-		if current.ID == id {
+		if current.Name == name {
 			return current, true
 		}
 		current, _ = current.Next()

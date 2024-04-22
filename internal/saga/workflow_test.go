@@ -18,14 +18,12 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 
 	t.Run("should return error when current step is not found in message workflow", func(t *testing.T) {
 		steps := NewStepList(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    true,
 			PayloadBuilder: &payloadBuilderMock{},
 		})
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -39,11 +37,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   SuccessActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     uuid.New(),
 					Name:   "create-order",
 					Action: SuccessActionType,
 				},
@@ -61,7 +57,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 
 	t.Run("should return nil when message action type is success and there are no more steps", func(t *testing.T) {
 		createOrderStep := &StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    true,
@@ -69,7 +64,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		}
 		steps := NewStepList(createOrderStep)
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -83,11 +77,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   SuccessActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     createOrderStep.ID,
 					Name:   createOrderStep.Name,
 					Action: SuccessActionType,
 				},
@@ -106,7 +98,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for successful message, should return next step when exists", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    true,
@@ -114,7 +105,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		verifyClient := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "verify_client",
 			ServiceName:    "client",
 			Compensable:    true,
@@ -122,7 +112,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -137,11 +126,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   SuccessActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     createOrderStep.ID,
 					Name:   createOrderStep.Name,
 					Action: SuccessActionType,
 				},
@@ -160,7 +147,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for error message type, should return the first compensable step [itself]", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    true,
@@ -168,7 +154,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		_ = steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "verify_client",
 			ServiceName:    "client",
 			Compensable:    false,
@@ -176,7 +161,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -191,11 +175,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   FailureActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     createOrderStep.ID,
 					Name:   createOrderStep.Name,
 					Action: FailureActionType,
 				},
@@ -214,7 +196,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for error message type, should return the the first compensable step [previous]", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    true,
@@ -222,7 +203,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "verify_client",
 			ServiceName:    "client",
 			Compensable:    false,
@@ -230,7 +210,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -245,11 +224,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   FailureActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     verifyStep.ID,
 					Name:   verifyStep.Name,
 					Action: FailureActionType,
 				},
@@ -268,7 +245,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for error message type, should return nil if there are no compensable steps", func(t *testing.T) {
 		steps := NewStepList()
 		_ = steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    false,
@@ -276,7 +252,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "verify_client",
 			ServiceName:    "client",
 			Compensable:    false,
@@ -284,7 +259,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -299,11 +273,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   FailureActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     verifyStep.ID,
 					Name:   verifyStep.Name,
 					Action: FailureActionType,
 				},
@@ -322,7 +294,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for compensated message type, should return nil if there are no more compensable steps", func(t *testing.T) {
 		steps := NewStepList()
 		_ = steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    false,
@@ -330,7 +301,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "verify_client",
 			ServiceName:    "client",
 			Compensable:    false,
@@ -338,7 +308,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -353,11 +322,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   CompensatedActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     verifyStep.ID,
 					Name:   verifyStep.Name,
 					Action: CompensatedActionType,
 				},
@@ -376,7 +343,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for compensated message type, should return the first compensable step", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    true,
@@ -384,7 +350,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		verifyStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "verify_client",
 			ServiceName:    "client",
 			Compensable:    false,
@@ -392,7 +357,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -407,11 +371,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   CompensatedActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     verifyStep.ID,
 					Name:   verifyStep.Name,
 					Action: CompensatedActionType,
 				},
@@ -430,7 +392,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 	t.Run("for ErrUnknownActionType if event action type is not processable", func(t *testing.T) {
 		steps := NewStepList()
 		createOrderStep := steps.Append(&StepData{
-			ID:             uuid.New(),
 			Name:           "create_order",
 			ServiceName:    "order",
 			Compensable:    true,
@@ -438,7 +399,6 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		})
 
 		workflow := Workflow{
-			ID:           uuid.New(),
 			Name:         "create_order_saga",
 			ReplyChannel: "kfk.dev.create_order_saga.reply",
 			Steps:        steps,
@@ -453,11 +413,9 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 				Action:   RequestActionType,
 			},
 			Saga: Saga{
-				ID:           workflow.ID,
 				Name:         workflow.Name,
 				ReplyChannel: workflow.ReplyChannel,
 				Step: SagaStep{
-					ID:     createOrderStep.ID,
 					Name:   createOrderStep.Name,
 					Action: RequestActionType,
 				},
@@ -472,61 +430,5 @@ func TestWorkflow_GetNextStep(t *testing.T) {
 		assert.Nil(t, step)
 		assert.Error(t, err)
 		assert.Equal(t, ErrUnknownActionType, err)
-	})
-}
-
-func TestWorkflow_ConsumerEventTypes(t *testing.T) {
-	t.Run("should return a empty map if there are no steps in the workflow", func(t *testing.T) {
-		workflow := Workflow{
-			ID:           uuid.New(),
-			Name:         "create_order_saga",
-			ReplyChannel: "kfk.dev.create_order_saga.reply",
-			Steps:        NewStepList(),
-		}
-
-		eventTypes := workflow.ConsumerEventTypes()
-		assert.Empty(t, eventTypes)
-	})
-	t.Run("should return map of event types for consumer", func(t *testing.T) {
-		steps := NewStepList(
-			&StepData{
-				ID:          uuid.New(),
-				Name:        "create_order",
-				ServiceName: "order",
-				Compensable: true,
-			},
-			&StepData{
-				ID:          uuid.New(),
-				Name:        "verify_client",
-				ServiceName: "client",
-				Compensable: true,
-			},
-		)
-
-		workflow := Workflow{
-			ID:           uuid.New(),
-			Name:         "create_order_saga",
-			ReplyChannel: "kfk.dev.create_order_saga.reply",
-			Steps:        steps,
-		}
-
-		eventTypes := workflow.ConsumerEventTypes()
-		assert.Equal(t, len(eventTypes), 6)
-		for _, step := range eventTypes {
-			assert.Equal(t, workflow.ID, step)
-		}
-		expectedEventTypes := []string{
-			"create_order_saga.create_order.success",
-			"create_order_saga.create_order.failure",
-			"create_order_saga.create_order.compensated",
-			"create_order_saga.verify_client.success",
-			"create_order_saga.verify_client.failure",
-			"create_order_saga.verify_client.compensated",
-		}
-		for _, eventType := range expectedEventTypes {
-			_, ok := eventTypes[eventType]
-			assert.True(t, ok)
-		}
-
 	})
 }

@@ -70,7 +70,7 @@ func (h *MessageHandler) Handle(ctx context.Context, msg *kafka.Message, commitF
 	}
 
 	// Get execution
-	execution, err := h.executionRepository.Find(ctx, message.Saga.ID.String())
+	execution, err := h.executionRepository.Find(ctx, message.GlobalID.String())
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error getting workflow")
 		return err // TODO: handle error
