@@ -4,8 +4,8 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 )
 
 type Execution struct {
@@ -35,7 +35,7 @@ func (e *Execution) Read(key string, dest interface{}) error {
 	if !ok {
 		return errors.New("unable to get key value")
 	}
-	err := mapstructure.Decode(data, dest)
+	err := mapstructure.Decode(data, dest) // TODO: remove this dependency
 	if err != nil {
 		return err
 	}

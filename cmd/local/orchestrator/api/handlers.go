@@ -10,7 +10,7 @@ import (
 	"github.com/bmviniciuss/sagas-golang/pkg/responses"
 	"github.com/go-chi/render"
 	goval "github.com/go-playground/validator/v10"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 
 	"go.uber.org/zap"
 )

@@ -8,9 +8,9 @@ require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-chi/render v1.0.3
 	github.com/go-playground/validator/v10 v10.19.0
+	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.5.5
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0

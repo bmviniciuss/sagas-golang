@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"go.uber.org/zap"
 )
 
@@ -17,6 +17,7 @@ func NewCreateOrderStepPayloadBuilder(logger *zap.SugaredLogger) *CreateOrderSte
 }
 
 func (b *CreateOrderStepPayloadBuilder) Build(ctx context.Context, data map[string]interface{}, action saga.ActionType) (map[string]interface{}, error) {
+	// TODO: add execution as parameter
 	lggr := b.logger
 	// example of how to decode input data
 	var req Input

@@ -70,7 +70,7 @@ func main() {
 	createOrderUseCase := usecases.NewCreateOrder(lggr, ordersRepository)
 	createOrderHandler := handlers.NewCreateOrderHandler(lggr, createOrderUseCase)
 	usecasesMap := map[string]application.MessageHandler{
-		"create_order.create_order.request": createOrderHandler,
+		"create_order_v1.create_order.request": createOrderHandler,
 	}
 	handler := NewOrderMessageHandler(lggr, *publisher, usecasesMap)
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{
