@@ -12,32 +12,44 @@ func (os OrderStatus) String() string {
 }
 
 const (
-	OrderStatusPending   OrderStatus = "pending"
-	OrderStatusCompleted OrderStatus = "completed"
-	OrderStatusFailed    OrderStatus = "failed"
+	OrderStatusApprovalPending OrderStatus = "APPROVAL_PENDING"
 )
 
 type Order struct {
 	ID           uuid.UUID
 	GlobalID     uuid.UUID
-	ClientID     uuid.UUID
 	CustomerID   uuid.UUID
-	Total        int64
+	Amount       int64
 	CurrencyCode string
 	Status       OrderStatus
+	Items        []Item
 	CreatedAt    utc.Time
 	UpdatedAt    utc.Time
 }
 
-func NewOrder(clientID, customerID, globalID uuid.UUID, total int64, currencyCode string) Order {
+type Item struct {
+	ID        uuid.UUID
+	Quantity  int16
+	UnitPrice int64
+}
+
+func NewItem(id uuid.UUID, quantity int16, unitPrice int64) Item {
+	return Item{
+		ID:        id,
+		Quantity:  quantity,
+		UnitPrice: unitPrice,
+	}
+}
+
+func NewOrder(customerID, globalID uuid.UUID, amount int64, currencyCode string, items []Item) Order {
 	return Order{
 		ID:           uuid.New(),
 		GlobalID:     globalID,
-		ClientID:     clientID,
 		CustomerID:   customerID,
-		Total:        total,
+		Amount:       amount,
 		CurrencyCode: currencyCode,
-		Status:       OrderStatusPending,
+		Status:       OrderStatusApprovalPending,
+		Items:        items,
 		CreatedAt:    utc.Now(),
 		UpdatedAt:    utc.Now(),
 	}

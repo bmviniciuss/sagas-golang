@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/google/uuid"
@@ -81,7 +80,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, e
 	lggr := w.logger
 	lggr.Infof("Processing message: %s", message.EventType.Action.String())
 	workflow := execution.Workflow
-	execution.SetState(fmt.Sprintf("%s.response", message.Saga.Step.StateKey()), message.EventData)
+	// execution.SetState(fmt.Sprintf("%s.response", message.Saga.Step.StateKey()), message.EventData)
 	err = w.executionRepository.Save(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error saving execution state")
@@ -110,7 +109,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, e
 		return err
 	}
 	nextMsg := saga.NewMessage(message.GlobalID, payload, message.Metadata, workflow, nextStep, nextActionType)
-	execution.SetState(fmt.Sprintf("%s.request", nextMsg.Saga.Step.StateKey()), nextMsg.EventData)
+	// execution.SetState(fmt.Sprintf("%s.request", nextMsg.Saga.Step.StateKey()), nextMsg.EventData)
 	err = w.executionRepository.Save(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error saving execution next step request state")

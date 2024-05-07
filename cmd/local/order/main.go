@@ -18,6 +18,8 @@ import (
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -38,7 +40,17 @@ func main() {
 	defer lggr.Sync()
 
 	lggr.Info("Starting Order Service")
-	dbpool, err := pgxpool.New(context.Background(), "postgres://sagas:sagas@localhost:5432/sagas")
+	dbcfg, err := pgxpool.ParseConfig("postgres://sagas:sagas@localhost:5432/sagas") // TODO: add from env
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to parse config: %v\n", err)
+		os.Exit(1)
+	}
+	dbcfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		pgxuuid.Register(conn.TypeMap())
+		return nil
+	}
+
+	dbpool, err := pgxpool.NewWithConfig(context.Background(), dbcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
@@ -47,7 +59,7 @@ func main() {
 	lggr.Info("Connected to database")
 
 	redisConn := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: "localhost:6379", // TODO: add from env
 	})
 	err = redisConn.Ping(ctx).Err()
 	if err != nil {
@@ -58,7 +70,7 @@ func main() {
 	)
 
 	var (
-		bootstrapServers = "localhost:9092"
+		bootstrapServers = "localhost:9092" // TODO: add from env
 		topics           = strings.Split("service.order.request", ",")
 		group            = "order-service-group"
 	)

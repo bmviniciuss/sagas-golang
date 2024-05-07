@@ -20,6 +20,14 @@ func (e EventType) String() string {
 	return fmt.Sprintf("%s.%s.%s", e.SagaName, e.StepName, e.Action.String())
 }
 
+func NewReplyEventType(ev EventType, action ActionType) EventType {
+	return EventType{
+		SagaName: ev.SagaName,
+		StepName: ev.StepName,
+		Action:   action,
+	}
+}
+
 func (e EventType) MarshalJSON() ([]byte, error) {
 	val := e.String()
 	return []byte(strconv.Quote(val)), nil
@@ -57,13 +65,7 @@ type (
 		Metadata  map[string]string      `json:"metadata,omitempty"`
 	}
 	Saga struct {
-		Name         string   `json:"name"`
-		ReplyChannel string   `json:"reply_channel"`
-		Step         SagaStep `json:"step"`
-	}
-	SagaStep struct {
-		Name   string     `json:"name"`
-		Action ActionType `json:"action"`
+		ReplyChannel string `json:"reply_channel"`
 	}
 )
 
@@ -79,10 +81,6 @@ func (m *Message) Hash() (string, error) {
 
 func (m *Message) ToJSON() ([]byte, error) {
 	return json.Marshal(m)
-}
-
-func (sp *SagaStep) StateKey() string {
-	return fmt.Sprintf("%s.%s", sp.Name, sp.Action.String())
 }
 
 func NewMessage(
@@ -107,12 +105,7 @@ func NewMessage(
 			Action:   action,
 		},
 		Saga: Saga{
-			Name:         workflow.Name,
 			ReplyChannel: workflow.ReplyChannel,
-			Step: SagaStep{
-				Name:   step.Name,
-				Action: action,
-			},
 		},
 		EventData: data,
 		Metadata:  metadata,
@@ -123,8 +116,8 @@ func NewParticipantMessage(
 	globalID uuid.UUID,
 	eventData map[string]interface{},
 	metadata map[string]string,
-	action ActionType,
-	message *Message,
+	eventType EventType,
+	replyChannel string,
 ) *Message {
 	data := make(map[string]interface{})
 	if eventData != nil {
@@ -132,20 +125,11 @@ func NewParticipantMessage(
 	}
 
 	return &Message{
-		EventID:  uuid.New(),
-		GlobalID: globalID,
-		EventType: EventType{
-			SagaName: message.Saga.Name,
-			StepName: message.Saga.Step.Name,
-			Action:   action,
-		},
+		EventID:   uuid.New(),
+		GlobalID:  globalID,
+		EventType: eventType,
 		Saga: Saga{
-			Name:         message.Saga.Name,
-			ReplyChannel: message.Saga.ReplyChannel,
-			Step: SagaStep{
-				Name:   message.Saga.Step.Name,
-				Action: action,
-			},
+			ReplyChannel: replyChannel,
 		},
 		EventData: data,
 		Metadata:  metadata,

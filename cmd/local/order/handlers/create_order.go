@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/usecases"
@@ -23,9 +22,15 @@ var (
 
 type request struct {
 	CustomerID   uuid.UUID `json:"customer_id"`
-	Date         time.Time `json:"date"`
-	Total        *int64    `json:"total"`
+	Amount       *int64    `json:"amount"`
 	CurrencyCode string    `json:"currency_code"`
+	Items        []item    `json:"items"`
+}
+
+type item struct {
+	ID        uuid.UUID `json:"id"`
+	Quantity  *int16    `json:"quantity"`
+	UnitPrice *int64    `json:"unit_price"`
 }
 
 func NewCreateOrderHandler(logger *zap.SugaredLogger, createOrderUseCase usecases.CreateOrderUseCasePort) *CreateOrderHandler {
@@ -58,22 +63,32 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, msg *saga.Message) (*sa
 		lggr.With(zap.Error(err)).Error("Got error reading input")
 		return nil, err
 	}
-
+	// TODO: add validation
+	items := make([]usecases.CreateOrderItems, len(req.Items))
+	for i, item := range req.Items {
+		items[i] = usecases.CreateOrderItems{
+			ID:        item.ID,
+			Quantity:  *item.Quantity,
+			UnitPrice: *item.UnitPrice,
+		}
+	}
 	createRes, err := h.createOrderUseCase.Execute(ctx, usecases.CreateOrderRequest{
 		GlobalID:     globalID,
-		ClientID:     uuid.New(), // TODO: remove client_id
 		CustomerID:   req.CustomerID,
-		Total:        *req.Total,
+		Amount:       *req.Amount,
 		CurrencyCode: req.CurrencyCode,
+		Items:        items,
 	})
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error creating order")
-		return nil, err
+		resEventType := saga.NewReplyEventType(msg.EventType, saga.FailureActionType)
+		replyMessage := saga.NewParticipantMessage(globalID, nil, nil, resEventType, msg.Saga.ReplyChannel)
+		return replyMessage, nil
 	}
 
 	lggr.Infof("Successfully created order [%s]", createRes)
-	var res map[string]interface{} = make(map[string]interface{})
-	res["order_id"] = createRes.ID
-	replyMessage := saga.NewParticipantMessage(globalID, res, nil, saga.SuccessActionType, msg)
+	res := map[string]interface{}{"order_id": createRes.ID}
+	resEventType := saga.NewReplyEventType(msg.EventType, saga.SuccessActionType)
+	replyMessage := saga.NewParticipantMessage(globalID, res, nil, resEventType, msg.Saga.ReplyChannel)
 	return replyMessage, nil
 }

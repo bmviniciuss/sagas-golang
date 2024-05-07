@@ -86,8 +86,15 @@ func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, err
 }
 
 const insertOrderQuery = `
-INSERT INTO orders.orders (uuid, global_id, client_id, customer_id, total, currency_code, status, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO orders.orders
+	("uuid", global_id, customer_id, status, amount, currency_code, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+`
+
+const insertOrderItemQuery = `
+INSERT INTO orders.order_items
+("uuid", quantity, unit_price, order_id, created_at, updated_at)
+VALUES($1, $2, $3, $4, now(), now())
 `
 
 func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) error {
@@ -101,19 +108,45 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 	}
 	defer db.Release()
 
-	_, err = db.Exec(ctx, insertOrderQuery,
+	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error beginning transaction")
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var id int64
+	err = tx.QueryRow(ctx, insertOrderQuery,
 		order.ID.String(),
 		order.GlobalID.String(),
-		order.ClientID.String(),
 		order.CustomerID.String(),
-		order.Total,
-		order.CurrencyCode,
 		order.Status.String(),
+		order.Amount,
+		order.CurrencyCode,
 		order.CreatedAt,
 		order.UpdatedAt,
-	)
+	).Scan(&id)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error inserting order")
+		return err
+	}
+
+	for _, itemRow := range order.Items {
+		_, err = tx.Exec(ctx, insertOrderItemQuery,
+			itemRow.ID.String(),
+			itemRow.Quantity,
+			itemRow.UnitPrice,
+			id,
+		)
+		if err != nil {
+			lggr.With(zap.Error(err)).Error("Got error inserting order item")
+			return err
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error committing insert order transaction")
 		return err
 	}
 

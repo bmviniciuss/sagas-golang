@@ -27,7 +27,7 @@ func (w *Workflow) IsEmpty() bool {
 // If the message is a failure message, the first compensation step is returned or nil if there are no more steps
 // If the message is a compensated message, the next compensable step in the workflow is returned or nil if there are no more steps
 func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, error) { // TODO: use ptr to workflow
-	currentStep, ok := w.Steps.GetStep(message.Saga.Step.Name)
+	currentStep, ok := w.Steps.GetStep(message.EventType.StepName)
 	if !ok {
 		return nil, ErrCurrentStepNotFound
 	}
