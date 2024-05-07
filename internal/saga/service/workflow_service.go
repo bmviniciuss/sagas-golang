@@ -84,7 +84,12 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, e
 	lggr := w.logger
 	lggr.Infof("Processing message: %s", message.EventType.Action.String())
 	workflow := execution.Workflow
-	// execution.SetState(fmt.Sprintf("%s.response", message.Saga.Step.StateKey()), message.EventData)
+	err = execution.SetState(message.EventType.String(), message.EventData)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error setting message data to execution state")
+		return err
+	}
+
 	err = w.executionRepository.Save(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error saving execution state")
