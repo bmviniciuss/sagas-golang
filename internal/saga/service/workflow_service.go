@@ -37,45 +37,45 @@ func NewExecution(
 }
 
 func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error) {
-	l := w.logger // TODO: rename to lggr
-	l.Info("Starting workflow")
+	lggr := w.logger // TODO: rename to lggr
+	lggr.Info("Starting workflow")
 	execution := saga.NewExecution(workflow)
-	l.Infof("Starting saga with ID: %s", execution.ID.String())
+	lggr.Infof("Starting saga with ID: %s", execution.ID.String())
 	err := execution.SetState("input", data)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error setting input data to execution")
+		lggr.With(zap.Error(err)).Error("Got error setting input data to execution")
 		return nil, err
 	}
 	err = w.executionRepository.Save(ctx, execution)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while saving execution")
+		lggr.With(zap.Error(err)).Error("Got error while saving execution")
 		return nil, err
 	}
 
 	firstStep, ok := execution.Workflow.Steps.Head()
 	if !ok {
-		l.Info("There are no steps to process. Successfully finished workflow.")
+		lggr.Info("There are no steps to process. Successfully finished workflow.")
 		return nil, nil
 	}
 	actionType := saga.RequestActionType
 	payload, err := firstStep.PayloadBuilder.Build(ctx, execution, actionType)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while building payload")
+		lggr.With(zap.Error(err)).Error("Got error while building payload")
 		return nil, err
 	}
 
 	firstMsg := saga.NewMessage(execution.ID, payload, nil, workflow, firstStep, actionType)
 	jsonMsg, err := firstMsg.ToJSON()
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error while marshalling message")
+		lggr.With(zap.Error(err)).Error("Got error while marshalling message")
 		return nil, err
 	}
 	err = w.publisher.Publish(ctx, firstStep.DestinationTopic(actionType), jsonMsg)
 	if err != nil {
-		l.With(zap.Error(err)).Error("Got error publishing message to destination")
+		lggr.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return nil, err
 	}
-	l.Info("Successfully started workflow")
+	lggr.Info("Successfully started workflow")
 	return &execution.ID, nil
 }
 
