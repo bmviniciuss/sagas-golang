@@ -30,7 +30,6 @@ var (
 type orderModel struct {
 	ID           string    `db:"id"`
 	UUID         string    `db:"uuid"`
-	GlobalID     string    `db:"global_id"`
 	CustomerID   string    `db:"customer_id"`
 	Amount       int64     `db:"amount"`
 	CurrencyCode string    `db:"currency_code"`
@@ -40,7 +39,7 @@ type orderModel struct {
 }
 
 const listOrdersQuery = `
-SELECT id, uuid, global_id, customer_id, amount, currency_code, status, created_at, updated_at
+SELECT id, uuid, customer_id, amount, currency_code, status, created_at, updated_at
 FROM orders.orders
 `
 
@@ -71,7 +70,6 @@ func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, err
 	for i, order := range orders {
 		ordersPresentation[i] = presentation.Order{
 			ID:           order.UUID,
-			GlobalID:     order.GlobalID,
 			CustomerID:   order.CustomerID,
 			Amount:       order.Amount,
 			CurrencyCode: order.CurrencyCode,
@@ -85,8 +83,8 @@ func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, err
 
 const insertOrderQuery = `
 INSERT INTO orders.orders
-	("uuid", global_id, customer_id, status, amount, currency_code, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+	("uuid", customer_id, status, amount, currency_code, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
 `
 
 const insertOrderItemQuery = `
@@ -116,7 +114,6 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 	var id int64
 	err = tx.QueryRow(ctx, insertOrderQuery,
 		order.ID.String(),
-		order.GlobalID.String(),
 		order.CustomerID.String(),
 		order.Status.String(),
 		order.Amount,

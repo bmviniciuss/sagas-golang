@@ -17,7 +17,6 @@ const (
 
 type Order struct {
 	ID           uuid.UUID
-	GlobalID     uuid.UUID
 	CustomerID   uuid.UUID
 	Amount       int64
 	CurrencyCode string
@@ -43,8 +42,7 @@ func NewItem(id uuid.UUID, quantity int16, unitPrice int64) Item {
 
 func NewOrder(customerID, globalID uuid.UUID, amount int64, currencyCode string, items []Item) Order {
 	return Order{
-		ID:           uuid.New(),
-		GlobalID:     globalID,
+		ID:           globalID,
 		CustomerID:   customerID,
 		Amount:       amount,
 		CurrencyCode: currencyCode,
