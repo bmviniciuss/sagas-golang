@@ -8,6 +8,10 @@ func (at ActionType) String() string {
 	return string(at)
 }
 
+func (at ActionType) IsRequest() bool {
+	return at == RequestActionType
+}
+
 func (at ActionType) IsSuccess() bool {
 	return at == SuccessActionType
 }

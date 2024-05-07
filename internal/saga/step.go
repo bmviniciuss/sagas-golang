@@ -8,7 +8,7 @@ import (
 // PayloadBuilder is an interface for building the payload of a step in the workflow.
 type PayloadBuilder interface {
 	// Build builds the payload of a step in the workflow based on the given data and action.
-	Build(ctx context.Context, data map[string]interface{}, action ActionType) (map[string]interface{}, error)
+	Build(ctx context.Context, exec *Execution, action ActionType) (map[string]interface{}, error)
 }
 
 type (

@@ -37,12 +37,16 @@ func NewExecution(
 }
 
 func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error) {
-	l := w.logger
+	l := w.logger // TODO: rename to lggr
 	l.Info("Starting workflow")
 	execution := saga.NewExecution(workflow)
 	l.Infof("Starting saga with ID: %s", execution.ID.String())
-	execution.SetState("input", data)
-	err := w.executionRepository.Save(ctx, execution)
+	err := execution.SetState("input", data)
+	if err != nil {
+		l.With(zap.Error(err)).Error("Got error setting input data to execution")
+		return nil, err
+	}
+	err = w.executionRepository.Save(ctx, execution)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error while saving execution")
 		return nil, err
@@ -54,7 +58,7 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 		return nil, nil
 	}
 	actionType := saga.RequestActionType
-	payload, err := firstStep.PayloadBuilder.Build(ctx, data, actionType)
+	payload, err := firstStep.PayloadBuilder.Build(ctx, execution, actionType)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error while building payload")
 		return nil, err
@@ -103,7 +107,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, e
 		return err
 	}
 	lggr.Infof("Next step action type: %s", nextStep.Name)
-	payload, err := nextStep.PayloadBuilder.Build(ctx, execution.State, nextActionType)
+	payload, err := nextStep.PayloadBuilder.Build(ctx, execution, nextActionType)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while building payload")
 		return err

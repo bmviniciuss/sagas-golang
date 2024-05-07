@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/bmviniciuss/sagas-golang/pkg/responses"
 	"github.com/go-chi/render"
 	goval "github.com/go-playground/validator/v10"
-	"github.com/go-viper/mapstructure/v2"
 
 	"go.uber.org/zap"
 )
@@ -50,11 +50,30 @@ func (h *Handlers) Health(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, map[string]string{"status": "ok", "time": time.Now().Format(time.RFC3339)})
 }
 
+func StructToMap(data interface{}) (map[string]interface{}, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 type CreateOrderRequest struct {
-	CustomerID   string `json:"customer_id" mapstructure:"customer_id" validate:"required,uuid"`
-	Date         string `json:"date" mapstructure:"date" validate:"required"`
-	Total        *int64 `json:"total" mapstructure:"total" validate:"required,gt=0"`
-	CurrencyCode string `json:"currency_code" mapstructure:"currency_code" validate:"required"`
+	CustomerID   string `json:"customer_id" validate:"required,uuid"`
+	Amount       *int64 `json:"amount" validate:"required,gt=0"`
+	CurrencyCode string `json:"currency_code" validate:"required"`
+	Items        []Item `json:"items" validate:"required,min=1,dive"`
+}
+
+type Item struct {
+	ID        string `json:"id" validate:"required,uuid"`
+	Quantity  *int16 `json:"quantity" validate:"required,gt=0"`
+	UnitPrice *int64 `json:"unit_price" validate:"required,gt=0"`
 }
 
 func (h *Handlers) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -85,18 +104,17 @@ func (h *Handlers) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	lggr.Infof("Received request: %+v", req)
 
-	data := map[string]interface{}{}
-	err = mapstructure.Decode(req, &data)
+	createOrderWorkflow, err := h.workflowRepository.Find(ctx, "create_order_v1")
 	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error decoding create order request to map")
+		lggr.With(zap.Error(err)).Error("Got error finding workflow")
 		errRes := responses.NewInternalServerErrorResponse(reqID)
 		responses.RenderError(w, r, errRes)
 		return
 	}
 
-	createOrderWorkflow, err := h.workflowRepository.Find(ctx, "create_order_v1")
+	data, err := StructToMap(req)
 	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error finding workflow")
+		lggr.With(zap.Error(err)).Error("Got error decoding create order request to map")
 		errRes := responses.NewInternalServerErrorResponse(reqID)
 		responses.RenderError(w, r, errRes)
 		return
