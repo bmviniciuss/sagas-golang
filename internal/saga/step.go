@@ -51,6 +51,7 @@ func (s *Step) Previous() (*Step, bool) {
 // returns the first compensable step before the current step
 //
 // returns nil if no compensable step is found
+// TODO: prevent current step from being returned
 func (s *Step) FirstCompensableStep() (*Step, bool) {
 	current := s
 	for current != nil {
@@ -72,6 +73,7 @@ type StepsList struct {
 	len  int
 }
 
+// TODO: prevent duplicated step names
 func NewStepList(stepsData ...*StepData) *StepsList {
 	list := &StepsList{}
 	for _, data := range stepsData {

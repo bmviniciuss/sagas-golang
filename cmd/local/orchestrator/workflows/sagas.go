@@ -17,12 +17,12 @@ func NewCreateOrderV1(logger *zap.SugaredLogger) *saga.Workflow {
 				Compensable:    true,
 				PayloadBuilder: createorder.NewCreateOrderStepPayloadBuilder(logger),
 			},
-			// &saga.StepData{
-			// 	Name:           "verify_customer",
-			// 	ServiceName:    "customer",
-			// 	Compensable:    false,
-			// 	PayloadBuilder: createorder.NewVerifyCustomerPayloadBuilder(logger),
-			// },
+			&saga.StepData{
+				Name:           "verify_customer",
+				ServiceName:    "customer",
+				Compensable:    false,
+				PayloadBuilder: createorder.NewVerifyCustomerPayloadBuilder(logger),
+			},
 		),
 	}
 }

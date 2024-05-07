@@ -15,6 +15,6 @@ func NewVerifyCustomerPayloadBuilder(logger *zap.SugaredLogger) *VerifyCustomerP
 	return &VerifyCustomerPayloadBuilder{logger: logger}
 }
 
-func (b *VerifyCustomerPayloadBuilder) Build(ctx context.Context, data map[string]interface{}, action saga.ActionType) (map[string]interface{}, error) {
+func (b *VerifyCustomerPayloadBuilder) Build(ctx context.Context, exec *saga.Execution, action saga.ActionType) (map[string]interface{}, error) {
 	return map[string]interface{}{}, nil
 }
