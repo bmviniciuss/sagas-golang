@@ -118,7 +118,11 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, e
 		return err
 	}
 	nextMsg := saga.NewMessage(message.GlobalID, payload, message.Metadata, workflow, nextStep, nextActionType)
-	// execution.SetState(fmt.Sprintf("%s.request", nextMsg.Saga.Step.StateKey()), nextMsg.EventData)
+	err = execution.SetState(nextMsg.EventType.String(), nextMsg.EventData)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error setting next step request state to execution")
+		return err
+	}
 	err = w.executionRepository.Save(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error saving execution next step request state")
