@@ -31,9 +31,8 @@ type orderModel struct {
 	ID           string    `db:"id"`
 	UUID         string    `db:"uuid"`
 	GlobalID     string    `db:"global_id"`
-	ClientID     string    `db:"client_id"`
 	CustomerID   string    `db:"customer_id"`
-	Total        int64     `db:"total"`
+	Amount       int64     `db:"amount"`
 	CurrencyCode string    `db:"currency_code"`
 	Status       string    `db:"status"`
 	CreatedAt    time.Time `db:"created_at"`
@@ -41,7 +40,7 @@ type orderModel struct {
 }
 
 const listOrdersQuery = `
-SELECT id, uuid, global_id, client_id, customer_id, total, currency_code, status, created_at, updated_at
+SELECT id, uuid, global_id, customer_id, amount, currency_code, status, created_at, updated_at
 FROM orders.orders
 `
 
@@ -73,9 +72,8 @@ func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, err
 		ordersPresentation[i] = presentation.Order{
 			ID:           order.UUID,
 			GlobalID:     order.GlobalID,
-			ClientID:     order.ClientID,
 			CustomerID:   order.CustomerID,
-			Total:        order.Total,
+			Amount:       order.Amount,
 			CurrencyCode: order.CurrencyCode,
 			Status:       order.Status,
 			CreatedAt:    utc.NewFromTime(order.CreatedAt),
