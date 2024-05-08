@@ -19,13 +19,3 @@ type OrdersOrder struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 }
-
-type OrdersOrderItem struct {
-	Identifier int32
-	Uuid       uuid.UUID
-	Quantity   int32
-	UnitPrice  int64
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
-	OrderID    int32
-}

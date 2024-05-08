@@ -21,33 +21,17 @@ type Order struct {
 	Amount       int64
 	CurrencyCode string
 	Status       OrderStatus
-	Items        []Item
 	CreatedAt    utc.Time
 	UpdatedAt    utc.Time
 }
 
-type Item struct {
-	ID        uuid.UUID
-	Quantity  int32
-	UnitPrice int64
-}
-
-func NewItem(id uuid.UUID, quantity int32, unitPrice int64) Item {
-	return Item{
-		ID:        id,
-		Quantity:  quantity,
-		UnitPrice: unitPrice,
-	}
-}
-
-func NewOrder(customerID, globalID uuid.UUID, amount int64, currencyCode string, items []Item) Order {
+func NewOrder(customerID, globalID uuid.UUID, amount int64, currencyCode string) Order {
 	return Order{
 		ID:           globalID,
 		CustomerID:   customerID,
 		Amount:       amount,
 		CurrencyCode: currencyCode,
 		Status:       OrderStatusApprovalPending,
-		Items:        items,
 		CreatedAt:    utc.Now(),
 		UpdatedAt:    utc.Now(),
 	}

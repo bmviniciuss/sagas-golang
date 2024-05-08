@@ -74,15 +74,7 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 	defer db.Release()
 	queries := generated.New(db)
 
-	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error beginning transaction")
-		return err
-	}
-	defer tx.Rollback(ctx)
-	qtx := queries.WithTx(tx)
-
-	orderID, err := qtx.InsertOrder(ctx, generated.InsertOrderParams{
+	err = queries.InsertOrder(ctx, generated.InsertOrderParams{
 		Uuid:         order.ID,
 		CustomerID:   order.CustomerID,
 		Status:       order.Status.String(),
@@ -101,51 +93,20 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 		lggr.With(zap.Error(err)).Error("Got error inserting order")
 		return err
 	}
-
-	for _, itemRow := range order.Items {
-		err = qtx.InsertOrderItem(ctx, generated.InsertOrderItemParams{
-			Uuid:      itemRow.ID,
-			Quantity:  itemRow.Quantity,
-			UnitPrice: itemRow.UnitPrice,
-			OrderID:   orderID,
-		})
-		if err != nil {
-			lggr.With(zap.Error(err)).Error("Got error inserting order item")
-			return err
-		}
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error committing insert order transaction")
-		return err
-	}
-
 	return nil
 }
 
 func (r *RepositoryAdapter) FindByID(ctx context.Context, id uuid.UUID) (*presentation.OrderById, error) {
 	lggr := r.lggr
-	lggr.Info("RepositoryAdapter.Insert")
-
+	lggr.Info("RepositoryAdapter.FindByID")
 	db, err := r.pool.Acquire(ctx)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error acquiring connection")
 		return nil, err
 	}
 	defer db.Release()
-
 	queries := generated.New(db)
-
-	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error beginning transaction")
-		return nil, err
-	}
-	defer tx.Rollback(ctx)
-	qtx := queries.WithTx(tx)
-
-	order, err := qtx.GetOrder(ctx, id)
+	order, err := queries.GetOrder(ctx, id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return &presentation.OrderById{}, nil
@@ -153,29 +114,12 @@ func (r *RepositoryAdapter) FindByID(ctx context.Context, id uuid.UUID) (*presen
 		lggr.With(zap.Error(err)).Error("Got error querying get order by id")
 		return nil, err
 	}
-
-	orderItems := []presentation.Item{}
-	orderItemsRows, err := qtx.GetOrderItems(ctx, order.Uuid)
-	if err != nil && err != pgx.ErrNoRows {
-		lggr.With(zap.Error(err)).Error("Got error querying get order items by order id")
-		return nil, err
-	}
-
-	for _, item := range orderItemsRows {
-		orderItems = append(orderItems, presentation.Item{
-			ID:        item.Uuid.String(),
-			Quantity:  item.Quantity,
-			UnitPrice: item.UnitPrice,
-		})
-	}
-
 	orderPresentation := presentation.OrderById{
 		ID:           order.Uuid.String(),
 		CustomerID:   order.CustomerID.String(),
 		Amount:       order.Amount,
 		CurrencyCode: order.CurrencyCode,
 		Status:       order.Status,
-		Items:        orderItems,
 		CreatedAt:    utc.NewFromTime(order.CreatedAt.Time),
 		UpdatedAt:    utc.NewFromTime(order.UpdatedAt.Time),
 	}

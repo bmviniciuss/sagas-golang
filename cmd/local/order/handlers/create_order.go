@@ -24,13 +24,6 @@ type request struct {
 	CustomerID   uuid.UUID `json:"customer_id"`
 	Amount       *int64    `json:"amount"`
 	CurrencyCode string    `json:"currency_code"`
-	Items        []item    `json:"items"`
-}
-
-type item struct {
-	ID        uuid.UUID `json:"id"`
-	Quantity  *int32    `json:"quantity"`
-	UnitPrice *int64    `json:"unit_price"`
 }
 
 func NewCreateOrderHandler(logger *zap.SugaredLogger, createOrderUseCase usecases.CreateOrderUseCasePort) *CreateOrderHandler {
@@ -63,21 +56,11 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, msg *saga.Message) (*sa
 		lggr.With(zap.Error(err)).Error("Got error reading input")
 		return nil, err
 	}
-	// TODO: add validation
-	items := make([]usecases.CreateOrderItems, len(req.Items))
-	for i, item := range req.Items {
-		items[i] = usecases.CreateOrderItems{
-			ID:        item.ID,
-			Quantity:  *item.Quantity,
-			UnitPrice: *item.UnitPrice,
-		}
-	}
 	createRes, err := h.createOrderUseCase.Execute(ctx, usecases.CreateOrderRequest{
 		GlobalID:     globalID,
 		CustomerID:   req.CustomerID,
 		Amount:       *req.Amount,
 		CurrencyCode: req.CurrencyCode,
-		Items:        items,
 	})
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error creating order")

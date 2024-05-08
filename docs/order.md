@@ -13,14 +13,7 @@ The expected input contract is:
   "event_data": {
     "customer_id": "a6de20fa-1576-4d23-a94c-ee2464872c38",
     "amount": 10000,
-    "currency_code": "BRL",
-    "items": [
-      {
-        "id": "a6de20fa-1576-4d23-a94c-ee2464872c38",
-        "quantity": 1,
-        "unit_price": 10000
-      }
-    ]
+    "currency_code": "BRL"
   },
   "saga": {
     "name": "create_order_v1",

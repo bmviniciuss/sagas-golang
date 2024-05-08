@@ -44,41 +44,7 @@ func (q *Queries) GetOrder(ctx context.Context, argUuid uuid.UUID) (GetOrderRow,
 	return i, err
 }
 
-const getOrderItems = `-- name: GetOrderItems :many
-SELECT oi.id, oi.uuid, oi.quantity, oi.unit_price, oi.created_at, oi.updated_at, oi.order_id FROM orders.order_items oi
-join orders.orders o on o.id  = oi.order_id
-where o.uuid = $1
-`
-
-func (q *Queries) GetOrderItems(ctx context.Context, argUuid uuid.UUID) ([]OrdersOrderItem, error) {
-	rows, err := q.db.Query(ctx, getOrderItems, argUuid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []OrdersOrderItem
-	for rows.Next() {
-		var i OrdersOrderItem
-		if err := rows.Scan(
-			&i.Identifier,
-			&i.Uuid,
-			&i.Quantity,
-			&i.UnitPrice,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.OrderID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const insertOrder = `-- name: InsertOrder :one
+const insertOrder = `-- name: InsertOrder :exec
 INSERT INTO orders.orders
 	("uuid", customer_id, status, amount, currency_code, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
@@ -94,8 +60,8 @@ type InsertOrderParams struct {
 	UpdatedAt    pgtype.Timestamptz
 }
 
-func (q *Queries) InsertOrder(ctx context.Context, arg InsertOrderParams) (int32, error) {
-	row := q.db.QueryRow(ctx, insertOrder,
+func (q *Queries) InsertOrder(ctx context.Context, arg InsertOrderParams) error {
+	_, err := q.db.Exec(ctx, insertOrder,
 		arg.Uuid,
 		arg.CustomerID,
 		arg.Status,
@@ -103,31 +69,6 @@ func (q *Queries) InsertOrder(ctx context.Context, arg InsertOrderParams) (int32
 		arg.CurrencyCode,
 		arg.CreatedAt,
 		arg.UpdatedAt,
-	)
-	var id int32
-	err := row.Scan(&id)
-	return id, err
-}
-
-const insertOrderItem = `-- name: InsertOrderItem :exec
-INSERT INTO orders.order_items
-("uuid", quantity, unit_price, order_id, created_at, updated_at)
-VALUES($1, $2, $3, $4, now(), now())
-`
-
-type InsertOrderItemParams struct {
-	Uuid      uuid.UUID
-	Quantity  int32
-	UnitPrice int64
-	OrderID   int32
-}
-
-func (q *Queries) InsertOrderItem(ctx context.Context, arg InsertOrderItemParams) error {
-	_, err := q.db.Exec(ctx, insertOrderItem,
-		arg.Uuid,
-		arg.Quantity,
-		arg.UnitPrice,
-		arg.OrderID,
 	)
 	return err
 }

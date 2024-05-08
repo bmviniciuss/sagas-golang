@@ -14,14 +14,3 @@ CREATE TABLE IF NOT EXISTS orders.orders (
 CREATE INDEX IF NOT EXISTS idx_orders_uuid ON orders.orders (uuid);
 
 CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders.orders (customer_id);
-
-CREATE TABLE IF NOT EXISTS orders.order_items (
-  id serial PRIMARY KEY,
-  uuid uuid NOT NULL,
-  quantity integer NOT NULL,
-  unit_price bigint NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  order_id integer NOT NULL,
-  CONSTRAINT fk_order_id FOREIGN KEY (order_id) REFERENCES orders.orders(id)
-);

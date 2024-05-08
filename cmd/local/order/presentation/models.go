@@ -26,17 +26,10 @@ type OrderById struct {
 	Amount       int64    `json:"amount"`
 	CurrencyCode string   `json:"currency_code"`
 	Status       string   `json:"status"`
-	Items        []Item   `json:"items"`
 	CreatedAt    utc.Time `json:"created_at"`
 	UpdatedAt    utc.Time `json:"updated_at"`
 }
 
 func (or *OrderById) IsEmpty() bool {
 	return reflect.DeepEqual(OrderById{}, *or)
-}
-
-type Item struct {
-	ID        string `json:"id"`
-	Quantity  int32  `json:"quantity"`
-	UnitPrice int64  `json:"unit_price"`
 }
