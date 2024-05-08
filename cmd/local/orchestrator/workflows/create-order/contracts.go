@@ -27,3 +27,8 @@ type CreateOrderRequestItemPayload struct {
 	Quantity  *int32 `json:"quantity" `
 	UnitPrice *int64 `json:"unit_price" `
 }
+
+// CreateOrderResponsePayload is the data structure that represents the payload for the create order step response
+type VerifyCustomerRequestPayload struct {
+	CustomerID string `json:"customer_id" `
+}

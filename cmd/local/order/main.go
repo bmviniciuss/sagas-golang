@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bmviniciuss/sagas-golang/cmd/local/order/adapters/repositores/order"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/adapters/repositores/order" // TODO: fix typo
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/api"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/usecases"
