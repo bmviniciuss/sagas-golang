@@ -72,7 +72,7 @@ type CreateOrderRequest struct {
 
 type Item struct {
 	ID        string `json:"id" validate:"required,uuid"`
-	Quantity  *int16 `json:"quantity" validate:"required,gt=0"`
+	Quantity  *int32 `json:"quantity" validate:"required,gt=0"`
 	UnitPrice *int64 `json:"unit_price" validate:"required,gt=0"`
 }
 

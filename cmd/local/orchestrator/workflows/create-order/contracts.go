@@ -1,18 +1,20 @@
 package createorder
 
+// Input is the data structure that represents the input data for the create order step
 type Input struct {
-	CustomerID   string `json:"customer_id" validate:"required,uuid"`
-	Amount       *int64 `json:"amount" validate:"required,gt=0"`
-	CurrencyCode string `json:"currency_code" validate:"required"`
-	Items        []Item `json:"items" validate:"required,min=1,dive"`
+	CustomerID   string      `json:"customer_id" validate:"required,uuid"`
+	Amount       *int64      `json:"amount" validate:"required,gt=0"`
+	CurrencyCode string      `json:"currency_code" validate:"required"`
+	Items        []ItemInput `json:"items" validate:"required,min=1,dive"`
 }
 
-type Item struct {
+type ItemInput struct {
 	ID        string `json:"id" validate:"required,uuid"`
-	Quantity  *int16 `json:"quantity" validate:"required,gt=0"`
+	Quantity  *int32 `json:"quantity" validate:"required,gt=0"`
 	UnitPrice *int64 `json:"unit_price" validate:"required,gt=0"`
 }
 
+// CreateOrderRequestPayload is the data structure that represents the payload for the create order step request
 type CreateOrderRequestPayload struct {
 	CustomerID   string                          `json:"customer_id" `
 	Amount       *int64                          `json:"amount" `
@@ -22,6 +24,6 @@ type CreateOrderRequestPayload struct {
 
 type CreateOrderRequestItemPayload struct {
 	ID        string `json:"id" `
-	Quantity  *int16 `json:"quantity" `
+	Quantity  *int32 `json:"quantity" `
 	UnitPrice *int64 `json:"unit_price" `
 }
