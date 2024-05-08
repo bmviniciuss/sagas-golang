@@ -18,8 +18,6 @@ import (
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	pgxuuid "github.com/jackc/pgx-gofrs-uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -40,17 +38,7 @@ func main() {
 	defer lggr.Sync()
 
 	lggr.Info("Starting Order Service")
-	dbcfg, err := pgxpool.ParseConfig("postgres://sagas:sagas@localhost:5432/sagas") // TODO: add from env
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to parse config: %v\n", err)
-		os.Exit(1)
-	}
-	dbcfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
-		pgxuuid.Register(conn.TypeMap())
-		return nil
-	}
-
-	dbpool, err := pgxpool.NewWithConfig(context.Background(), dbcfg)
+	dbpool, err := pgxpool.New(context.Background(), "postgres://sagas:sagas@localhost:5432/sagas") // TODO: add from env
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
