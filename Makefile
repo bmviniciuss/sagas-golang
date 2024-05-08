@@ -20,3 +20,6 @@ orders:
 
 customer:
 	go run ./cmd/local/customer/
+
+kitchen:
+	go run ./cmd/local/kitchen/
