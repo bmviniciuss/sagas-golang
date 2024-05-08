@@ -28,11 +28,11 @@ type Order struct {
 
 type Item struct {
 	ID        uuid.UUID
-	Quantity  int16
+	Quantity  int32
 	UnitPrice int64
 }
 
-func NewItem(id uuid.UUID, quantity int16, unitPrice int64) Item {
+func NewItem(id uuid.UUID, quantity int32, unitPrice int64) Item {
 	return Item{
 		ID:        id,
 		Quantity:  quantity,

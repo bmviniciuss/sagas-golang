@@ -106,9 +106,10 @@ func main() {
 	}()
 
 	var (
-		listUseCase = usecases.NewListOrders(lggr, ordersRepository)
-		apiHandlers = api.NewHandlers(lggr, listUseCase)
-		httpServer  = newApiServer(":3001", apiHandlers)
+		listUseCase  = usecases.NewListOrders(lggr, ordersRepository)
+		getOrderByID = usecases.NewGetOrderByID(lggr, ordersRepository)
+		apiHandlers  = api.NewHandlers(lggr, listUseCase, getOrderByID)
+		httpServer   = newApiServer(":3001", apiHandlers)
 	)
 
 	go func() {

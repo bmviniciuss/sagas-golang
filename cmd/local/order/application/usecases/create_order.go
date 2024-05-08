@@ -19,7 +19,7 @@ type CreateOrderRequest struct {
 
 type CreateOrderItems struct {
 	ID        uuid.UUID
-	Quantity  int16
+	Quantity  int32
 	UnitPrice int64
 }
 

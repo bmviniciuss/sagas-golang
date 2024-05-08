@@ -30,6 +30,17 @@ func NewInternalServerErrorResponse(id string) Error {
 	}
 }
 
+func NewNotFoundErrorResponse(id string) Error {
+	return Error{
+		ID:     id,
+		Status: http.StatusNotFound,
+		Err: ErrorDetail{
+			Code:    http.StatusNotFound,
+			Message: "Not Found",
+		},
+	}
+}
+
 func NewBadRequestErrorResponse(id string, details []FieldError) Error {
 	return Error{
 		ID:     id,

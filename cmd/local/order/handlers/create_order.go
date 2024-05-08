@@ -29,7 +29,7 @@ type request struct {
 
 type item struct {
 	ID        uuid.UUID `json:"id"`
-	Quantity  *int16    `json:"quantity"`
+	Quantity  *int32    `json:"quantity"`
 	UnitPrice *int64    `json:"unit_price"`
 }
 

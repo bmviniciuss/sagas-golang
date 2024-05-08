@@ -1,6 +1,10 @@
 package presentation
 
-import "github.com/bmviniciuss/sagas-golang/pkg/utc"
+import (
+	"reflect"
+
+	"github.com/bmviniciuss/sagas-golang/pkg/utc"
+)
 
 type Order struct {
 	ID           string   `json:"id"`
@@ -14,4 +18,25 @@ type Order struct {
 
 type OrderList struct {
 	Content []Order `json:"content"` // TODO: add pagination
+}
+
+type OrderById struct {
+	ID           string   `json:"id"`
+	CustomerID   string   `json:"customer_id"`
+	Amount       int64    `json:"amount"`
+	CurrencyCode string   `json:"currency_code"`
+	Status       string   `json:"status"`
+	Items        []Item   `json:"items"`
+	CreatedAt    utc.Time `json:"created_at"`
+	UpdatedAt    utc.Time `json:"updated_at"`
+}
+
+func (or *OrderById) IsEmpty() bool {
+	return reflect.DeepEqual(OrderById{}, *or)
+}
+
+type Item struct {
+	ID        string `json:"id"`
+	Quantity  int32  `json:"quantity"`
+	UnitPrice int64  `json:"unit_price"`
 }
