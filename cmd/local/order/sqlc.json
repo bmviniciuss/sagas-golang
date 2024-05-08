@@ -1,0 +1,31 @@
+{
+  "version": "2",
+  "overrides": {
+    "go": {
+      "rename": {
+        "id": "Identifier"
+      },
+      "overrides": [
+        {
+          "db_type": "uuid",
+          "engine": "postgresql",
+          "go_type": "github.com/google/uuid.UUID"
+        }
+      ]
+    }
+  },
+  "sql": [
+    {
+      "engine": "postgresql",
+      "queries": "query.sql",
+      "schema": "../ddl/01-create-orders.sql",
+      "gen": {
+        "go": {
+          "package": "generated",
+          "out": "./adapters/repositores/order/generated",
+          "sql_package": "pgx/v5"
+        }
+      }
+    }
+  ]
+}

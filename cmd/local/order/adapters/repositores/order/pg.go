@@ -2,14 +2,15 @@ package order
 
 import (
 	"context"
-	"time"
 
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/adapters/repositores/order/generated"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/repositories"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/domain/entities"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/presentation"
 	"github.com/bmviniciuss/sagas-golang/pkg/utc"
-	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
@@ -27,22 +28,6 @@ var (
 	_ repositories.Orders = (*RepositoryAdapter)(nil)
 )
 
-type orderModel struct {
-	ID           string    `db:"id"`
-	UUID         string    `db:"uuid"`
-	CustomerID   string    `db:"customer_id"`
-	Amount       int64     `db:"amount"`
-	CurrencyCode string    `db:"currency_code"`
-	Status       string    `db:"status"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
-}
-
-const listOrdersQuery = `
-SELECT id, uuid, customer_id, amount, currency_code, status, created_at, updated_at
-FROM orders.orders
-`
-
 func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, error) {
 	lggr := r.lggr
 	lggr.Info("RepositoryAdapter.List")
@@ -52,7 +37,8 @@ func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, err
 		return nil, err
 	}
 	defer db.Release()
-	rows, err := db.Query(ctx, listOrdersQuery)
+	queries := generated.New(db)
+	rows, err := queries.ListOrders(ctx)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return []presentation.Order{}, nil
@@ -60,38 +46,21 @@ func (r *RepositoryAdapter) List(ctx context.Context) ([]presentation.Order, err
 		lggr.With(zap.Error(err)).Error("Got error querying database")
 		return nil, err
 	}
-	var orders []orderModel
-	err = pgxscan.ScanAll(&orders, rows)
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error scanning rows")
-		return nil, err
-	}
-	ordersPresentation := make([]presentation.Order, len(orders))
-	for i, order := range orders {
+
+	ordersPresentation := make([]presentation.Order, len(rows))
+	for i, row := range rows {
 		ordersPresentation[i] = presentation.Order{
-			ID:           order.UUID,
-			CustomerID:   order.CustomerID,
-			Amount:       order.Amount,
-			CurrencyCode: order.CurrencyCode,
-			Status:       order.Status,
-			CreatedAt:    utc.NewFromTime(order.CreatedAt),
-			UpdatedAt:    utc.NewFromTime(order.UpdatedAt),
+			ID:           row.Uuid.String(),
+			CustomerID:   row.CustomerID.String(),
+			Amount:       row.Amount,
+			CurrencyCode: row.CurrencyCode,
+			Status:       row.Status,
+			CreatedAt:    utc.NewFromTime(row.CreatedAt.Time),
+			UpdatedAt:    utc.NewFromTime(row.UpdatedAt.Time),
 		}
 	}
 	return ordersPresentation, nil
 }
-
-const insertOrderQuery = `
-INSERT INTO orders.orders
-	("uuid", customer_id, status, amount, currency_code, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
-`
-
-const insertOrderItemQuery = `
-INSERT INTO orders.order_items
-("uuid", quantity, unit_price, order_id, created_at, updated_at)
-VALUES($1, $2, $3, $4, now(), now())
-`
 
 func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) error {
 	lggr := r.lggr
@@ -103,6 +72,7 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 		return err
 	}
 	defer db.Release()
+	queries := generated.New(db)
 
 	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -110,29 +80,35 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 		return err
 	}
 	defer tx.Rollback(ctx)
+	qtx := queries.WithTx(tx)
 
-	var id int64
-	err = tx.QueryRow(ctx, insertOrderQuery,
-		order.ID.String(),
-		order.CustomerID.String(),
-		order.Status.String(),
-		order.Amount,
-		order.CurrencyCode,
-		order.CreatedAt,
-		order.UpdatedAt,
-	).Scan(&id)
+	orderID, err := qtx.InsertOrder(ctx, generated.InsertOrderParams{
+		Uuid:         order.ID,
+		CustomerID:   order.CustomerID,
+		Status:       order.Status.String(),
+		Amount:       order.Amount,
+		CurrencyCode: order.CurrencyCode,
+		CreatedAt: pgtype.Timestamptz{
+			Time:  order.CreatedAt.Time(),
+			Valid: true,
+		},
+		UpdatedAt: pgtype.Timestamptz{
+			Time:  order.UpdatedAt.Time(),
+			Valid: true,
+		},
+	})
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error inserting order")
 		return err
 	}
 
 	for _, itemRow := range order.Items {
-		_, err = tx.Exec(ctx, insertOrderItemQuery,
-			itemRow.ID.String(),
-			itemRow.Quantity,
-			itemRow.UnitPrice,
-			id,
-		)
+		err = qtx.InsertOrderItem(ctx, generated.InsertOrderItemParams{
+			Uuid:      itemRow.ID,
+			Quantity:  itemRow.Quantity,
+			UnitPrice: itemRow.UnitPrice,
+			OrderID:   orderID,
+		})
 		if err != nil {
 			lggr.With(zap.Error(err)).Error("Got error inserting order item")
 			return err
@@ -146,4 +122,63 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 	}
 
 	return nil
+}
+
+func (r *RepositoryAdapter) FindByID(ctx context.Context, id uuid.UUID) (*presentation.OrderById, error) {
+	lggr := r.lggr
+	lggr.Info("RepositoryAdapter.Insert")
+
+	db, err := r.pool.Acquire(ctx)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error acquiring connection")
+		return nil, err
+	}
+	defer db.Release()
+
+	queries := generated.New(db)
+
+	tx, err := db.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error beginning transaction")
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+	qtx := queries.WithTx(tx)
+
+	order, err := qtx.GetOrder(ctx, id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return &presentation.OrderById{}, nil
+		}
+		lggr.With(zap.Error(err)).Error("Got error querying get order by id")
+		return nil, err
+	}
+
+	orderItems := []presentation.Item{}
+	orderItemsRows, err := qtx.GetOrderItems(ctx, order.Uuid)
+	if err != nil && err != pgx.ErrNoRows {
+		lggr.With(zap.Error(err)).Error("Got error querying get order items by order id")
+		return nil, err
+	}
+
+	for _, item := range orderItemsRows {
+		orderItems = append(orderItems, presentation.Item{
+			ID:        item.Uuid.String(),
+			Quantity:  item.Quantity,
+			UnitPrice: item.UnitPrice,
+		})
+	}
+
+	orderPresentation := presentation.OrderById{
+		ID:           order.Uuid.String(),
+		CustomerID:   order.CustomerID.String(),
+		Amount:       order.Amount,
+		CurrencyCode: order.CurrencyCode,
+		Status:       order.Status,
+		Items:        orderItems,
+		CreatedAt:    utc.NewFromTime(order.CreatedAt.Time),
+		UpdatedAt:    utc.NewFromTime(order.UpdatedAt.Time),
+	}
+
+	return &orderPresentation, nil
 }
