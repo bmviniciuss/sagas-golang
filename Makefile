@@ -15,5 +15,8 @@ dep:
 run:
 	go run ./cmd/local/orchestrator/
 
-run-orders:
+orders:
 	go run ./cmd/local/order/
+
+customer:
+	go run ./cmd/local/customer/

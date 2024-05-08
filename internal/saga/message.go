@@ -20,6 +20,7 @@ func (e EventType) String() string {
 	return fmt.Sprintf("%s.%s.%s", e.SagaName, e.StepName, e.Action.String())
 }
 
+// TODO: rename to NewResponseEventType
 func NewReplyEventType(ev EventType, action ActionType) EventType {
 	return EventType{
 		SagaName: ev.SagaName,
