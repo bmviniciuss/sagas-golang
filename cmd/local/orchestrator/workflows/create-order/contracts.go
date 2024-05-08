@@ -32,3 +32,16 @@ type CreateOrderRequestItemPayload struct {
 type VerifyCustomerRequestPayload struct {
 	CustomerID string `json:"customer_id" `
 }
+
+type CreateTicketRequestPayload struct {
+	CustomerID   string                           `json:"customer_id"`
+	Amount       int64                            `json:"amount"`
+	CurrencyCode string                           `json:"currency_code"`
+	Items        []CreateTicketItemRequestPayload `json:"items"`
+}
+
+type CreateTicketItemRequestPayload struct {
+	ID        string `json:"id"`
+	Quantity  int32  `json:"quantity"`
+	UnitPrice int64  `json:"unit_price"`
+}
