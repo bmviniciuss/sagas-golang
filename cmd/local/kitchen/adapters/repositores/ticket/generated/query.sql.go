@@ -12,6 +12,56 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getTicket = `-- name: GetTicket :one
+SELECT id, uuid, customer_id, status, amount, currency_code, created_at, updated_at FROM kitchen.ticket WHERE uuid = $1
+`
+
+func (q *Queries) GetTicket(ctx context.Context, argUuid uuid.UUID) (KitchenTicket, error) {
+	row := q.db.QueryRow(ctx, getTicket, argUuid)
+	var i KitchenTicket
+	err := row.Scan(
+		&i.Identifier,
+		&i.Uuid,
+		&i.CustomerID,
+		&i.Status,
+		&i.Amount,
+		&i.CurrencyCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getTicketItems = `-- name: GetTicketItems :many
+SELECT uuid, quantity, unit_price FROM kitchen.ticket_items WHERE ticket_id = $1
+`
+
+type GetTicketItemsRow struct {
+	Uuid      uuid.UUID
+	Quantity  int32
+	UnitPrice int64
+}
+
+func (q *Queries) GetTicketItems(ctx context.Context, ticketID int32) ([]GetTicketItemsRow, error) {
+	rows, err := q.db.Query(ctx, getTicketItems, ticketID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTicketItemsRow
+	for rows.Next() {
+		var i GetTicketItemsRow
+		if err := rows.Scan(&i.Uuid, &i.Quantity, &i.UnitPrice); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertTicket = `-- name: InsertTicket :one
 INSERT INTO kitchen.ticket 
 (uuid, customer_id, status, amount, currency_code, created_at, updated_at)
@@ -62,5 +112,20 @@ func (q *Queries) InsertTicketItem(ctx context.Context, arg InsertTicketItemPara
 		arg.UnitPrice,
 		arg.TicketID,
 	)
+	return err
+}
+
+const updateTicketStatus = `-- name: UpdateTicketStatus :exec
+UPDATE kitchen.ticket SET status = $1, updated_at = $2 WHERE uuid = $3
+`
+
+type UpdateTicketStatusParams struct {
+	Status    string
+	UpdatedAt pgtype.Timestamptz
+	Uuid      uuid.UUID
+}
+
+func (q *Queries) UpdateTicketStatus(ctx context.Context, arg UpdateTicketStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTicketStatus, arg.Status, arg.UpdatedAt, arg.Uuid)
 	return err
 }
