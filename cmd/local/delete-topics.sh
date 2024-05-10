@@ -4,5 +4,4 @@ docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --de
 docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --delete --topic service.order.request
 docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --delete --topic service.customer.request
 docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --delete --topic service.kitchen.request
-
-docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --list
+docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --delete --topic service.accounting.request 

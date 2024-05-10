@@ -19,6 +19,7 @@ func NewPublisher(logger *zap.SugaredLogger, kfkCfg *kafka.ConfigMap) *Publisher
 	}
 }
 
+// TODO: add key
 func (p *Publisher) Publish(ctx context.Context, destination string, data []byte) error {
 	l := p.logger
 	l.Infof("Publishing message to destination %s", destination)

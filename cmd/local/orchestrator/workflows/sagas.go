@@ -29,6 +29,12 @@ func NewCreateOrderV1(logger *zap.SugaredLogger) *saga.Workflow {
 				Compensable:    true,
 				PayloadBuilder: createorder.NewCreateTicketPayloadBuilder(logger),
 			},
+			&saga.StepData{
+				Name:           "authorize_card",
+				ServiceName:    "accounting",
+				Compensable:    true,
+				PayloadBuilder: createorder.NewAuthorizeCardPayloadBuilder(logger),
+			},
 		),
 	}
 }

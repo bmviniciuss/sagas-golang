@@ -8,14 +8,15 @@ POST http://{{path}}/v1/create-orders
 Content-Type: application/json
 
 {
-  "customer_id": "135f7d8d-11da-4441-9860-b290ed0a8252",
-  "amount": 10000,
+  "customer_id": "018f6058-66f6-7110-82ac-8fd0034b1367",
+  "card": "0000000000000001",
+  "amount": 140,
   "currency_code": "BRL",
   "items": [
     {
-      "id": "55d9d5c0-1aa4-477b-a0ab-e21a7ea26196",
+      "id": "018f6058-66f6-7110-82ac-8fd0034b1367",
       "quantity": 1,
-      "unit_price": 10000
+      "unit_price": 140
     }
   ]
 }

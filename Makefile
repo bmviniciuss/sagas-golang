@@ -18,8 +18,11 @@ run:
 orders:
 	go run ./cmd/local/order/
 
-customer:
+customers:
 	go run ./cmd/local/customer/
 
 kitchen:
 	go run ./cmd/local/kitchen/
+
+accounting:
+	go run ./cmd/local/accounting/

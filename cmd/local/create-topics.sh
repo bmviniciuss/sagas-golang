@@ -4,4 +4,4 @@ docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --cr
 docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --create --topic service.order.request --partitions 1 --replication-factor 1
 docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --create --topic service.customer.request --partitions 1 --replication-factor 1
 docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --create --topic service.kitchen.request --partitions 1 --replication-factor 1
-docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --list
+docker exec broker bash /bin/kafka-topics --bootstrap-server localhost:9092 --create --topic service.accounting.request --partitions 1 --replication-factor 1

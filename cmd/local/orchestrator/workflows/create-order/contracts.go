@@ -3,6 +3,7 @@ package createorder
 // Input is the data structure that represents the input data for the create order step
 type Input struct {
 	CustomerID   string      `json:"customer_id" validate:"required,uuid"`
+	Card         string      `json:"card" validate:"required,uuid"`
 	Amount       *int64      `json:"amount" validate:"required,gt=0"`
 	CurrencyCode string      `json:"currency_code" validate:"required"`
 	Items        []ItemInput `json:"items" validate:"required,min=1,dive"`
@@ -44,4 +45,9 @@ type CreateTicketItemRequestPayload struct {
 	ID        string `json:"id"`
 	Quantity  int32  `json:"quantity"`
 	UnitPrice int64  `json:"unit_price"`
+}
+
+type AuthorizeCardRequestPayload struct {
+	Card   string `json:"card"`
+	Amount int64  `json:"amount"`
 }

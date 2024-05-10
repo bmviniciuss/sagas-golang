@@ -65,6 +65,7 @@ func StructToMap(data interface{}) (map[string]interface{}, error) {
 
 type CreateOrderRequest struct {
 	CustomerID   string `json:"customer_id" validate:"required,uuid"`
+	Card         string `json:"card" validate:"required"`
 	Amount       *int64 `json:"amount" validate:"required,gt=0"`
 	CurrencyCode string `json:"currency_code" validate:"required"`
 	Items        []Item `json:"items" validate:"required,min=1,dive"`
