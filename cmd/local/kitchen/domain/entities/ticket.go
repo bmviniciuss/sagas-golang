@@ -1,6 +1,8 @@
 package entities
 
 import (
+	"reflect"
+
 	"github.com/bmviniciuss/sagas-golang/pkg/utc"
 	"github.com/google/uuid"
 )
@@ -12,7 +14,8 @@ func (os TicketStatus) String() string {
 }
 
 const (
-	TicketStatusCreatePending TicketStatus = "CREATE_PENDING"
+	TicketStatusCreatePending      TicketStatus = "CREATE_PENDING"
+	TicketStatusAwaitingAcceptance TicketStatus = "AWAITING_ACCEPTANCE"
 )
 
 type Ticket struct {
@@ -24,6 +27,15 @@ type Ticket struct {
 	CreatedAt    utc.Time
 	UpdatedAt    utc.Time
 	Items        []Item
+}
+
+func (t *Ticket) IsEmpty() bool {
+	return reflect.DeepEqual(*t, Ticket{})
+}
+
+func (t *Ticket) Approve() {
+	t.Status = TicketStatusAwaitingAcceptance
+	t.UpdatedAt = utc.Now()
 }
 
 type Item struct {
