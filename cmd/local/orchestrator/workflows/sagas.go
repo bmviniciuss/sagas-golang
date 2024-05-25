@@ -59,6 +59,22 @@ func NewCreateOrderV1(logger *zap.SugaredLogger) *saga.Workflow {
 					Response: "service.accounting.events",
 				},
 			},
+			&saga.StepData{
+				Name:           "approve_order",
+				ServiceName:    "orders",
+				Compensable:    true,
+				PayloadBuilder: createorder.NewApproveOrderPayloadBuilder(logger),
+				EventTypes: saga.EventTypes{
+					Request:      "approve_order",
+					Success:      "order_approved",
+					Failure:      "",
+					Compensation: "",
+				},
+				Topics: saga.Topics{
+					Request:  "service.orders.request",
+					Response: "service.orders.events",
+				},
+			},
 		),
 	}
 }

@@ -13,6 +13,7 @@ func (os OrderStatus) String() string {
 
 const (
 	OrderStatusApprovalPending OrderStatus = "APPROVAL_PENDING"
+	OrderStatusApproved        OrderStatus = "APPROVED"
 )
 
 type Order struct {
@@ -23,6 +24,11 @@ type Order struct {
 	Status       OrderStatus
 	CreatedAt    utc.Time
 	UpdatedAt    utc.Time
+}
+
+func (o *Order) Approve() {
+	o.Status = OrderStatusApproved
+	o.UpdatedAt = utc.Now()
 }
 
 func NewOrder(customerID, globalID uuid.UUID, amount int64, currencyCode string) Order {

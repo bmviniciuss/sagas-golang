@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/adapters/repositores/order/generated"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/repositories"
@@ -73,7 +74,8 @@ func (r *RepositoryAdapter) Insert(ctx context.Context, order entities.Order) er
 	}
 	defer db.Release()
 	queries := generated.New(db)
-
+	idString := order.ID.String()
+	fmt.Println("idString", idString)
 	err = queries.InsertOrder(ctx, generated.InsertOrderParams{
 		Uuid:         order.ID,
 		CustomerID:   order.CustomerID,
@@ -125,4 +127,61 @@ func (r *RepositoryAdapter) FindByID(ctx context.Context, id uuid.UUID) (*presen
 	}
 
 	return &orderPresentation, nil
+}
+
+func (r *RepositoryAdapter) Find(ctx context.Context, id uuid.UUID) (*entities.Order, error) {
+	lggr := r.lggr
+	lggr.Info("RepositoryAdapter.Find")
+	db, err := r.pool.Acquire(ctx)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error acquiring connection")
+		return nil, err
+	}
+	defer db.Release()
+	queries := generated.New(db)
+	order, err := queries.GetOrder(ctx, id)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return &entities.Order{}, nil
+		}
+		lggr.With(zap.Error(err)).Error("Got error querying get order by id")
+		return nil, err
+	}
+	return &entities.Order{
+		ID:           order.Uuid,
+		CustomerID:   order.CustomerID,
+		Amount:       order.Amount,
+		CurrencyCode: order.CurrencyCode,
+		Status:       entities.OrderStatus(order.Status),
+		CreatedAt:    utc.NewFromTime(order.CreatedAt.Time),
+		UpdatedAt:    utc.NewFromTime(order.UpdatedAt.Time),
+	}, nil
+}
+
+func (r *RepositoryAdapter) UpdateStatus(ctx context.Context, order *entities.Order) error {
+	lggr := r.lggr
+	lggr.Info("RepositoryAdapter.UpdateStatus")
+	db, err := r.pool.Acquire(ctx)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error acquiring connection")
+		return err
+	}
+	defer db.Release()
+	queries := generated.New(db)
+
+	err = queries.UpdateOrder(ctx, generated.UpdateOrderParams{
+		Uuid:   order.ID,
+		Status: order.Status.String(),
+		UpdatedAt: pgtype.Timestamptz{
+			Time:  order.UpdatedAt.Time(),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error updating order status")
+		return err
+	}
+
+	lggr.Infof("Updated order status to [%s]", order.ID)
+	return nil
 }

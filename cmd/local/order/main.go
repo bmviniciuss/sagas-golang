@@ -53,9 +53,6 @@ func main() {
 	if err != nil {
 		lggr.With(zap.Error(err)).Fatal("Got error connecting to Redis")
 	}
-	var (
-		ordersRepository = order.NewRepositoryAdapter(lggr, dbpool)
-	)
 
 	var (
 		bootstrapServers = "localhost:9092" // TODO: add from env
@@ -67,11 +64,14 @@ func main() {
 		"bootstrap.servers": bootstrapServers,
 	})
 
-	createOrderUseCase := usecases.NewCreateOrder(lggr, ordersRepository)
-	createOrderHandler := handlers.NewCreateOrderHandler(lggr, createOrderUseCase)
-	usecasesMap := map[string]application.MessageHandler{
-		"create_order": createOrderHandler,
-	}
+	var (
+		ordersRepository = order.NewRepositoryAdapter(lggr, dbpool)
+		usecasesMap      = map[string]application.MessageHandler{
+			"create_order":  handlers.NewCreateOrderHandler(lggr, usecases.NewCreateOrder(lggr, ordersRepository)),
+			"approve_order": handlers.NewApproveOrder(lggr, usecases.NewApproveOrder(lggr, ordersRepository)),
+		}
+	)
+
 	handler := NewOrderMessageHandler(lggr, *publisher, usecasesMap)
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{
 		"bootstrap.servers":        bootstrapServers,

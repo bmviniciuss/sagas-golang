@@ -57,12 +57,22 @@ func (h *OrderMessageHandler) Handle(ctx context.Context, msg *kafka.Message, co
 		l.With(zap.Error(err)).Error("Got error handling message")
 		return err
 	}
+	if replyMessage == nil {
+		l.Infof("Nil reply message received. Should send message for retry by any means")
+		err = commitFn()
+		if err != nil {
+			l.With(zap.Error(err)).Error("Got error committing message")
+			return err
+		}
+		return nil
+	}
 
 	data, err := json.Marshal(replyMessage)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error marshalling reply message")
 		return err
 	}
+
 	l.Infof("Successfully marshalled reply message")
 	err = h.publisher.Publish(ctx, "service.orders.events", data) // TODO: add outbox pattern
 	if err != nil {

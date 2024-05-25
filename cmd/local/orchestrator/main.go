@@ -52,7 +52,7 @@ func main() {
 		topics               = []string{
 			"service.orders.events",
 			"service.customers.events",
-			"service.kitchen.events",
+			"service.accounting.events",
 		}
 		consumerGroupID    = "sagas-golang"
 		publisher          = newPublisher(lggr, bootstrapServers)
