@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
-	"github.com/bmviniciuss/sagas-golang/internal/saga"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"go.uber.org/zap"
 )
 
@@ -40,13 +40,18 @@ func parseInput(data map[string]interface{}, dest interface{}) error {
 	return nil
 }
 
-func (h *AuthorizeCardHandler) Handle(ctx context.Context, msg *saga.Message) (*saga.Message, error) {
-	lggr := h.logger
-	lggr.Infof("Handling message [%s]", msg.EventType.String())
+// TODO: add enum
+// Request:      "authorize_card",
+// Success:      "card_authorized",
+// Failure:      "card_authorization_failed",
 
-	globalID := msg.GlobalID
+func (h *AuthorizeCardHandler) Handle(ctx context.Context, msg *events.Event) (*events.Event, error) {
+	lggr := h.logger
+	lggr.Infof("Handling message [%s]", msg.Type)
+
+	globalID := msg.CorrelationID
 	var req request
-	err := parseInput(msg.EventData, &req)
+	err := parseInput(msg.Data, &req)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error reading input")
 		return nil, err
@@ -55,14 +60,12 @@ func (h *AuthorizeCardHandler) Handle(ctx context.Context, msg *saga.Message) (*
 
 	if req.Card == "0000000000000000" {
 		lggr.Error("Card not authorized for this purchase")
-		resEventType := saga.NewReplyEventType(msg.EventType, saga.FailureActionType)
-		replyMessage := saga.NewParticipantMessage(globalID, nil, nil, resEventType, msg.Saga.ReplyChannel)
-		return replyMessage, nil
+		errEvt := events.NewEvent("card_authorization_failed", "accounting", nil).WithCorrelationID(globalID)
+		return errEvt, nil
 	}
 
 	lggr.Infof("Successfully authorized card [%s] for amount [%d]", req.Card, *req.Amount)
 	res := map[string]interface{}{}
-	resEventType := saga.NewReplyEventType(msg.EventType, saga.SuccessActionType)
-	replyMessage := saga.NewParticipantMessage(globalID, res, nil, resEventType, msg.Saga.ReplyChannel)
-	return replyMessage, nil
+	successEvt := events.NewEvent("card_authorized", "accounting", res).WithCorrelationID(globalID)
+	return successEvt, nil
 }

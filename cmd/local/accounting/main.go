@@ -47,9 +47,9 @@ func main() {
 		"bootstrap.servers": bootstrapServers,
 	})
 
-	createOrderHandler := handlers.NewAuthorizeCardHandler(lggr)
+	authorizeCardHandler := handlers.NewAuthorizeCardHandler(lggr)
 	handlersMap := map[string]application.MessageHandler{
-		"create_order_v1.authorize_card.request": createOrderHandler,
+		"authorize_card": authorizeCardHandler,
 	}
 	handler := handlers.NewAccountingKafkaHandler(lggr, *publisher, handlersMap)
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{

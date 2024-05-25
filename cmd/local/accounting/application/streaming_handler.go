@@ -3,9 +3,9 @@ package application
 import (
 	"context"
 
-	"github.com/bmviniciuss/sagas-golang/internal/saga"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 )
 
 type MessageHandler interface {
-	Handle(ctx context.Context, msg *saga.Message) (*saga.Message, error)
+	Handle(ctx context.Context, msg *events.Event) (*events.Event, error)
 }

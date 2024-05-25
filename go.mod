@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/bytedance/sonic v1.11.6
 	github.com/caarlos0/env v3.5.0+incompatible
-	github.com/confluentinc/confluent-kafka-go/v2 v2.3.0
+	github.com/confluentinc/confluent-kafka-go/v2 v2.4.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-chi/render v1.0.3
 	github.com/go-playground/validator/v10 v10.19.0

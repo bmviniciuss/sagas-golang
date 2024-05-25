@@ -8,6 +8,7 @@ import (
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/bmviniciuss/sagas-golang/internal/saga/service"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.uber.org/zap"
 )
@@ -41,19 +42,19 @@ func NewMessageHandler(
 func (h *MessageHandler) Handle(ctx context.Context, msg *kafka.Message, commitFn func() error) error {
 	l := h.logger
 	l.Info("Handling message")
-	var message saga.Message
-	err := json.Unmarshal(msg.Value, &message)
+	var event events.Event
+	err := json.Unmarshal(msg.Value, &event)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error unmarshalling message")
 		return err
 	}
-	l.With("message", message).Info("Got message")
-	msgHash, err := message.Hash()
+	l.With("message", event).Info("Got message")
+	msgHash, err := event.Hash()
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error creating message hash")
 		return err
 	}
-	key := fmt.Sprintf("%s:%s:%s", message.GlobalID, message.EventID, msgHash)
+	key := fmt.Sprintf("%s:%s:%s", event.ID, event.CorrelationID, msgHash)
 	idempotent, err := h.idempotenceService.Has(ctx, key)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error checking idempotence")
@@ -70,7 +71,7 @@ func (h *MessageHandler) Handle(ctx context.Context, msg *kafka.Message, commitF
 	}
 
 	// Get execution
-	execution, err := h.executionRepository.Find(ctx, message.GlobalID.String())
+	execution, err := h.executionRepository.Find(ctx, event.CorrelationID)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error getting workflow")
 		return err // TODO: handle error
@@ -86,7 +87,7 @@ func (h *MessageHandler) Handle(ctx context.Context, msg *kafka.Message, commitF
 		return nil
 	}
 
-	err = h.workflowService.ProcessMessage(ctx, &message, execution)
+	err = h.workflowService.ProcessMessage(ctx, &event, execution)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error processing workflow message")
 		return err

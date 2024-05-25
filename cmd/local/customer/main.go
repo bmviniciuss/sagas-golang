@@ -32,18 +32,18 @@ func main() {
 	lggr.Info("Starting Customer Service")
 
 	var (
-		bootstrapServers = "localhost:9092"                               // TODO: add from env
-		topics           = strings.Split("service.customer.request", ",") // TODO: add from env
-		group            = "consumer-service-group"                       // TODO: add from env
+		bootstrapServers = "localhost:9092"                                // TODO: add from env
+		topics           = strings.Split("service.customers.request", ",") // TODO: add from env
+		group            = "consumer-service-group"                        // TODO: add from env
 	)
 
 	publisher := streaming.NewPublisher(lggr, &kafka.ConfigMap{
 		"bootstrap.servers": bootstrapServers,
 	})
 
-	createOrderHandler := handlers.NewVerifyCustomer(lggr)
+	verifyCustomerHandler := handlers.NewVerifyCustomer(lggr)
 	handlersMap := map[string]application.MessageHandler{
-		"create_order_v1.verify_customer.request": createOrderHandler,
+		"verify_customer": verifyCustomerHandler,
 	}
 	handler := handlers.NewCustomerMessageHandler(lggr, *publisher, handlersMap)
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{

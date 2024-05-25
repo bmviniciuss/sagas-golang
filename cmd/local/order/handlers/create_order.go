@@ -6,7 +6,7 @@ import (
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/usecases"
-	"github.com/bmviniciuss/sagas-golang/internal/saga"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -45,13 +45,23 @@ func parseInput(data map[string]interface{}, dest interface{}) error {
 	return nil
 }
 
-func (h *CreateOrderHandler) Handle(ctx context.Context, msg *saga.Message) (*saga.Message, error) {
-	lggr := h.logger
-	lggr.Infof("Handling message [%s]", msg.EventType.String())
+// TODO: add enum
+// Request:      "create_order",
+// Success:      "order_created",
+// Failure:      "order_creation_failed",
+// Compensation: "order_creation_compensated",
 
-	globalID := msg.GlobalID
+func (h *CreateOrderHandler) Handle(ctx context.Context, event *events.Event) (*events.Event, error) {
+	lggr := h.logger
+	lggr.Infof("Handling message [%s]", event.Type)
+
+	globalID, err := uuid.Parse(event.CorrelationID)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error parsing correlation ID")
+		return nil, err
+	}
 	var req request
-	err := parseInput(msg.EventData, &req)
+	err = parseInput(event.Data, &req)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error reading input")
 		return nil, err
@@ -64,14 +74,12 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, msg *saga.Message) (*sa
 	})
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error creating order")
-		resEventType := saga.NewReplyEventType(msg.EventType, saga.FailureActionType)
-		replyMessage := saga.NewParticipantMessage(globalID, nil, nil, resEventType, msg.Saga.ReplyChannel)
-		return replyMessage, nil
+		errEvent := events.NewEvent("order_creation_failed", "orders", map[string]interface{}{}).WithCorrelationID(event.CorrelationID)
+		return errEvent, nil
 	}
 
 	lggr.Infof("Successfully created order [%s]", createRes)
-	res := map[string]interface{}{"order_id": createRes.ID}
-	resEventType := saga.NewReplyEventType(msg.EventType, saga.SuccessActionType)
-	replyMessage := saga.NewParticipantMessage(globalID, res, nil, resEventType, msg.Saga.ReplyChannel)
-	return replyMessage, nil
+	res := map[string]interface{}{"id": createRes.ID}
+	successEvt := events.NewEvent("order_created", "orders", res).WithCorrelationID(event.CorrelationID)
+	return successEvt, nil
 }

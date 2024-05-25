@@ -59,7 +59,7 @@ func main() {
 
 	var (
 		bootstrapServers = "localhost:9092" // TODO: add from env
-		topics           = strings.Split("service.order.request", ",")
+		topics           = strings.Split("service.orders.request", ",")
 		group            = "order-service-group"
 	)
 
@@ -70,7 +70,7 @@ func main() {
 	createOrderUseCase := usecases.NewCreateOrder(lggr, ordersRepository)
 	createOrderHandler := handlers.NewCreateOrderHandler(lggr, createOrderUseCase)
 	usecasesMap := map[string]application.MessageHandler{
-		"create_order_v1.create_order.request": createOrderHandler,
+		"create_order": createOrderHandler,
 	}
 	handler := NewOrderMessageHandler(lggr, *publisher, usecasesMap)
 	consumer, err := streaming.NewConsumer(lggr, topics, &kafka.ConfigMap{

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 )
 
 var (
@@ -26,13 +28,13 @@ func (w *Workflow) IsEmpty() bool {
 // If the message is a success message, the next step in the workflow is returned or nil if there are no more steps
 // If the message is a failure message, the first compensation step is returned or nil if there are no more steps
 // If the message is a compensated message, the next compensable step in the workflow is returned or nil if there are no more steps
-func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, error) { // TODO: use ptr to workflow
-	currentStep, ok := w.Steps.GetStep(message.EventType.StepName)
+func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (*Step, error) { // TODO: use ptr to workflow
+	currentStep, ok := w.Steps.GetStepFromServiceEvent(message.Origin, message.Type)
 	if !ok {
 		return nil, ErrCurrentStepNotFound
 	}
 
-	if message.EventType.Action.IsSuccess() {
+	if currentStep.IsSuccess(message.Type) {
 		nextStep, ok := currentStep.Next()
 		if !ok {
 			return nil, nil
@@ -40,7 +42,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, err
 		return nextStep, nil
 	}
 
-	if message.EventType.Action.IsFailure() {
+	if currentStep.IsFailure(message.Type) {
 		firstCompensableStep, ok := currentStep.FirstCompensableStep()
 		if !ok {
 			return nil, nil
@@ -48,7 +50,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message Message) (*Step, err
 		return firstCompensableStep, nil
 	}
 
-	if message.EventType.Action.IsCompensated() {
+	if currentStep.IsCompensation(message.Type) {
 		nextCompensableStep, ok := currentStep.FirstCompensableStep()
 		if !ok {
 			return nil, nil

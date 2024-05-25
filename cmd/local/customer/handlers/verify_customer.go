@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
-	"github.com/bmviniciuss/sagas-golang/internal/saga"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -40,13 +40,17 @@ func parseInput(data map[string]interface{}, dest interface{}) error {
 	return nil
 }
 
-func (h *VerifyCustomer) Handle(ctx context.Context, msg *saga.Message) (*saga.Message, error) {
-	lggr := h.logger
-	lggr.Infof("Handling message [%s]", msg.EventType.String())
+// Request:      "verify_customer",
+// Success:      "customer_verified",
+// Failure:      "customer_verification_failed",
 
-	globalID := msg.GlobalID
+func (h *VerifyCustomer) Handle(ctx context.Context, msg *events.Event) (*events.Event, error) {
+	lggr := h.logger
+	lggr.Infof("Handling message with message [%s]", msg.Type)
+
+	globalID := msg.CorrelationID
 	var req request
-	err := parseInput(msg.EventData, &req)
+	err := parseInput(msg.Data, &req)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error reading input")
 		return nil, err
@@ -55,20 +59,12 @@ func (h *VerifyCustomer) Handle(ctx context.Context, msg *saga.Message) (*saga.M
 
 	if req.CustomerID.String() == "00000000-0000-0000-0000-000000000000" {
 		lggr.Error("Customer not available to create order")
-		resEventType := saga.NewReplyEventType(msg.EventType, saga.FailureActionType)
-		replyMessage := saga.NewParticipantMessage(globalID, nil, nil, resEventType, msg.Saga.ReplyChannel)
-		return replyMessage, nil
+		errEvt := events.NewEvent("customer_verification_failed", "customers", nil).WithCorrelationID(globalID)
+		return errEvt, nil
 	}
-	// if err != nil {
-	// 	lggr.With(zap.Error(err)).Error("Got error creating order")
-	// 	resEventType := saga.NewReplyEventType(msg.EventType, saga.FailureActionType)
-	// 	replyMessage := saga.NewParticipantMessage(globalID, nil, nil, resEventType, msg.Saga.ReplyChannel)
-	// 	return replyMessage, nil
-	// }
 
 	lggr.Infof("Customer can create order")
 	res := map[string]interface{}{"customer_id": req.CustomerID.String()}
-	resEventType := saga.NewReplyEventType(msg.EventType, saga.SuccessActionType)
-	replyMessage := saga.NewParticipantMessage(globalID, res, nil, resEventType, msg.Saga.ReplyChannel)
-	return replyMessage, nil
+	successEvt := events.NewEvent("customer_verified", "customers", res).WithCorrelationID(globalID)
+	return successEvt, nil
 }

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
-	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.uber.org/zap"
 )
@@ -34,14 +34,14 @@ func (h *CustomerMessageHandler) Handle(ctx context.Context, msg *kafka.Message,
 	l.Infof("Customer service received message [%s]", string(msg.Value))
 	// TODO: add idempotence check
 
-	var message saga.Message
+	var message events.Event
 	if err := json.Unmarshal(msg.Value, &message); err != nil {
 		h.logger.With("error", err).Error("Got error unmarshalling message")
 		return err
 	}
 	l.Infof("Successfully unmarshalled message")
 
-	useCase, ok := h.handlersMap[message.EventType.String()]
+	useCase, ok := h.handlersMap[message.Type]
 	if !ok {
 		l.Infof("Ignoring message")
 		err := commitFn()
@@ -64,7 +64,7 @@ func (h *CustomerMessageHandler) Handle(ctx context.Context, msg *kafka.Message,
 		return err
 	}
 	l.Infof("Successfully marshalled reply message")
-	err = h.publisher.Publish(ctx, message.Saga.ReplyChannel, data)
+	err = h.publisher.Publish(ctx, "service.customers.events", data)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error publishing message")
 		return err

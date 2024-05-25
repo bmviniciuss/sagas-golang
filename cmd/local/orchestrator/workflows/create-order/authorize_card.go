@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/bmviniciuss/sagas-golang/pkg/structs"
 	"go.uber.org/zap"
 )
@@ -48,5 +49,13 @@ func (v *AuthorizeCardPayloadBuilder) buildRequestPayload(_ context.Context, exe
 		lggr.With(zap.Error(err)).Error("Got error converting payload to map")
 		return nil, err
 	}
-	return payloadMap, nil
+
+	evt := events.NewEvent("authorize_card", "orchestrator", payloadMap).WithCorrelationID(exec.ID.String())
+	evtMap, err := structs.ToMap(evt)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error converting event to map")
+		return nil, err
+	}
+
+	return evtMap, nil
 }

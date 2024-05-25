@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
+	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -14,7 +15,7 @@ type Publisher interface {
 }
 
 type Port interface {
-	ProcessMessage(ctx context.Context, message *saga.Message, execution *saga.Execution) error
+	ProcessMessage(ctx context.Context, message *events.Event, execution *saga.Execution) error
 	Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error)
 }
 
@@ -58,19 +59,19 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 		return nil, nil
 	}
 	actionType := saga.RequestActionType
-	payload, err := firstStep.PayloadBuilder.Build(ctx, execution, actionType)
+	event, err := firstStep.PayloadBuilder.Build(ctx, execution, actionType)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while building payload")
 		return nil, err
 	}
 
-	firstMsg := saga.NewMessage(execution.ID, payload, nil, workflow, firstStep, actionType)
-	jsonMsg, err := firstMsg.ToJSON()
+	eventJSON, err := json.Marshal(event)
 	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error while marshalling message")
+		lggr.With(zap.Error(err)).Error("Got error while marshalling event data")
 		return nil, err
 	}
-	err = w.publisher.Publish(ctx, firstStep.DestinationTopic(actionType), jsonMsg)
+
+	err = w.publisher.Publish(ctx, firstStep.Topics.Request, eventJSON)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return nil, err
@@ -80,11 +81,12 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 }
 
 // TODO: add unit tests
-func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, execution *saga.Execution) (err error) {
+func (w *Execution) ProcessMessage(ctx context.Context, message *events.Event, execution *saga.Execution) (err error) {
 	lggr := w.logger
-	lggr.Infof("Processing message: %s", message.EventType.Action.String())
+	lggr.Infof("Saga Service started processing message with event: %s", message.Type)
 	workflow := execution.Workflow
-	err = execution.SetState(message.EventType.String(), message.EventData)
+	// Saving response data to execution state
+	err = execution.SetState(message.Type, message.Data)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error setting message data to execution state")
 		return err
@@ -96,6 +98,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, e
 		return err
 	}
 
+	// Aquring next step
 	nextStep, err := workflow.GetNextStep(ctx, *message)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while getting next step")
@@ -106,36 +109,21 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *saga.Message, e
 		return nil
 	}
 	lggr.Infof("Next step: %s", nextStep.Name)
-	nextActionType, err := message.EventType.Action.Next()
+
+	// building next event event
+	nextEvent, err := nextStep.PayloadBuilder.Build(ctx, execution, saga.RequestActionType)
 	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error while getting next action type")
-		return err
-	}
-	lggr.Infof("Next step action type: %s", nextStep.Name)
-	payload, err := nextStep.PayloadBuilder.Build(ctx, execution, nextActionType)
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error while building payload")
-		return err
-	}
-	nextMsg := saga.NewMessage(message.GlobalID, payload, message.Metadata, workflow, nextStep, nextActionType)
-	err = execution.SetState(nextMsg.EventType.String(), nextMsg.EventData)
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error setting next step request state to execution")
-		return err
-	}
-	err = w.executionRepository.Save(ctx, execution)
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error saving execution next step request state")
+		lggr.With(zap.Error(err)).Error("Got error building next step event")
 		return err
 	}
 
-	jsonMsg, err := json.Marshal(nextMsg)
+	eventJSON, err := json.Marshal(nextEvent)
 	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error while marshalling message")
+		lggr.With(zap.Error(err)).Error("Got error while marshalling event data")
 		return err
 	}
 
-	err = w.publisher.Publish(ctx, nextStep.DestinationTopic(nextActionType), jsonMsg)
+	err = w.publisher.Publish(ctx, nextStep.Topics.Request, eventJSON)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return err

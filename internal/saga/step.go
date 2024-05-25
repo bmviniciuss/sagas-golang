@@ -18,6 +18,20 @@ type (
 		ServiceName    string // TODO: rename to ResponsibleService
 		Compensable    bool
 		PayloadBuilder PayloadBuilder
+		EventTypes     EventTypes
+		Topics         Topics
+	}
+
+	EventTypes struct {
+		Request      string
+		Success      string
+		Failure      string
+		Compensation string
+	}
+
+	Topics struct {
+		Request  string
+		Response string
 	}
 
 	// Step represents a step in the workflow.
@@ -27,6 +41,18 @@ type (
 		prev *Step
 	}
 )
+
+func (sd *StepData) IsSuccess(eventType string) bool {
+	return eventType == sd.EventTypes.Success
+}
+
+func (sd *StepData) IsFailure(eventType string) bool {
+	return eventType == sd.EventTypes.Failure
+}
+
+func (sd *StepData) IsCompensation(eventType string) bool {
+	return eventType == sd.EventTypes.Compensation
+}
 
 // Next returns the next step in the workflow.
 //
@@ -110,11 +136,35 @@ func (sl *StepsList) Head() (*Step, bool) {
 }
 
 // GetStep returns the step with the given id.
+// TODO: remove this method
 func (sl *StepsList) GetStep(name string) (*Step, bool) {
 	current := sl.head
 	for current != nil {
 		if current.Name == name {
 			return current, true
+		}
+		current, _ = current.Next()
+	}
+	return nil, false
+}
+
+// GetStep returns the step with the given id.
+func (sl *StepsList) GetStepFromServiceEvent(serviceName string, eventType string) (*Step, bool) {
+	current := sl.head
+	for current != nil {
+		if current.ServiceName == serviceName {
+			if current.EventTypes.Request == eventType {
+				return current, true
+			}
+			if current.EventTypes.Success == eventType {
+				return current, true
+			}
+			if current.EventTypes.Failure == eventType {
+				return current, true
+			}
+			if current.EventTypes.Compensation == eventType {
+				return current, true
+			}
 		}
 		current, _ = current.Next()
 	}

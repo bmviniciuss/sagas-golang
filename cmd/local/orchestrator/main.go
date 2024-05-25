@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -50,12 +49,16 @@ func main() {
 	var (
 		executionsRepository = executions.NewInmemRepository()
 		bootstrapServers     = "localhost:9092"
-		topics               = strings.Split("saga.create_order_v1.response", ",")
-		consumerGroupID      = "sagas-golang"
-		publisher            = newPublisher(lggr, bootstrapServers)
-		workflowService      = service.NewExecution(lggr, executionsRepository, publisher)
-		idempotenceService   = kv.NewAdapter(lggr, redisConn)
-		messageHandler       = streaming.NewMessageHandler(lggr, executionsRepository, workflowService, idempotenceService)
+		topics               = []string{
+			"service.orders.events",
+			"service.customers.events",
+			"service.kitchen.events",
+		}
+		consumerGroupID    = "sagas-golang"
+		publisher          = newPublisher(lggr, bootstrapServers)
+		workflowService    = service.NewExecution(lggr, executionsRepository, publisher)
+		idempotenceService = kv.NewAdapter(lggr, redisConn)
+		messageHandler     = streaming.NewMessageHandler(lggr, executionsRepository, workflowService, idempotenceService)
 	)
 
 	workflows := []saga.Workflow{
