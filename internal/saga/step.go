@@ -77,9 +77,13 @@ func (s *Step) Previous() (*Step, bool) {
 // returns the first compensable step before the current step
 //
 // returns nil if no compensable step is found
-// TODO: prevent current step from being returned
 func (s *Step) FirstCompensableStep() (*Step, bool) {
-	current := s
+	prev, ok := s.Previous()
+	if !ok {
+		return nil, false
+	}
+
+	current := prev
 	for current != nil {
 		if current.Compensable {
 			return current, true
