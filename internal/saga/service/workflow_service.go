@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/bmviniciuss/sagas-golang/pkg/events"
@@ -85,8 +87,14 @@ func (w *Execution) ProcessMessage(ctx context.Context, event *events.Event, exe
 	lggr := w.logger
 	lggr.Infof("Saga Service started processing message with event: %s", event.Type)
 	workflow := execution.Workflow
+	currentStep, ok := workflow.Steps.GetStepFromServiceEvent(event.Origin, event.Type)
+	if !ok {
+		return errors.New("currenct step not found in workflow")
+	}
+
+	currenctStepResponseKey := fmt.Sprintf("%s.response.%s", currentStep.Name, event.Type)
 	// Saving response data to execution state
-	err = execution.SetState(event.Type, event.Data)
+	err = execution.SetState(currenctStepResponseKey, event.Data)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error setting message data to execution state")
 		return err
@@ -99,7 +107,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, event *events.Event, exe
 	}
 
 	// Aquring next step
-	nextStep, err := workflow.GetNextStep(ctx, *event)
+	nextStep, err := workflow.GetNextStep(ctx, currentStep, event.Type)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while getting next step")
 		return err

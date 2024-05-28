@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-
-	"github.com/bmviniciuss/sagas-golang/pkg/events"
 )
 
 var (
-	ErrCurrentStepNotFound = fmt.Errorf("current step not found in message workflow")
-	ErrUnknownActionType   = fmt.Errorf("unknown action type")
+	ErrUnknownActionType = fmt.Errorf("unknown action type")
 )
 
 type Workflow struct {
@@ -29,17 +26,12 @@ type NextStep struct {
 	ActionType ActionType
 }
 
-// GetNextStep returns the next step in the workflow based on the message received and the current workflow
-// If the message is a success message, the next step in the workflow is returned or nil if there are no more steps
-// If the message is a failure message, the first compensation step is returned or nil if there are no more steps
-// If the message is a compensated message, the next compensable step in the workflow is returned or nil if there are no more steps
-func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextStep, error) {
-	currentStep, ok := w.Steps.GetStepFromServiceEvent(message.Origin, message.Type)
-	if !ok {
-		return NextStep{}, ErrCurrentStepNotFound
-	}
-
-	if currentStep.IsSuccess(message.Type) {
+// GetNextStep returns the next step in the workflow based on current step and a received event type
+// If the event type is a success message, the next step in the workflow is returned or nil if there are no more steps
+// If the event type is a failure message, the first compensation step is returned or nil if there are no more steps
+// If the event type is a compensated message, the next compensable step in the workflow is returned or nil if there are no more steps
+func (w *Workflow) GetNextStep(ctx context.Context, currentStep *Step, eventType string) (NextStep, error) {
+	if currentStep.IsSuccess(eventType) {
 		nextStep, ok := currentStep.Next()
 		if !ok {
 			return NextStep{}, nil
@@ -50,7 +42,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextS
 		}, nil
 	}
 
-	if currentStep.IsFailure(message.Type) {
+	if currentStep.IsFailure(eventType) {
 		firstCompensableStep, ok := currentStep.FirstCompensableStep()
 		if !ok {
 			return NextStep{}, nil
@@ -61,7 +53,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextS
 		}, nil
 	}
 
-	if currentStep.IsCompensation(message.Type) {
+	if currentStep.IsCompensation(eventType) {
 		nextCompensableStep, ok := currentStep.FirstCompensableStep()
 		if !ok {
 			return NextStep{}, nil
