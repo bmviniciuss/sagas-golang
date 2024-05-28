@@ -1,4 +1,4 @@
-package service
+package saga
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bmviniciuss/sagas-golang/internal/saga"
 	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -16,40 +15,44 @@ type Publisher interface {
 	Publish(ctx context.Context, destination string, data []byte) error
 }
 
-type Port interface {
-	ProcessMessage(ctx context.Context, message *events.Event, execution *saga.Execution) error
-	Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error)
+type ServicePort interface {
+	Start(ctx context.Context, workflow *Workflow, data map[string]interface{}) (*uuid.UUID, error)
+	ProcessMessage(ctx context.Context, message *events.Event, execution *Execution) error
 }
 
-type Execution struct {
+type Service struct {
 	logger              *zap.SugaredLogger
-	executionRepository saga.ExecutionRepository
+	executionRepository ExecutionRepository
 	publisher           Publisher
 }
 
-func NewExecution(
+var (
+	_ ServicePort = (*Service)(nil)
+)
+
+func NewService(
 	logger *zap.SugaredLogger,
-	executionRepository saga.ExecutionRepository,
+	executionRepository ExecutionRepository,
 	publisher Publisher,
-) *Execution {
-	return &Execution{
+) *Service {
+	return &Service{
 		logger:              logger,
 		executionRepository: executionRepository,
 		publisher:           publisher,
 	}
 }
 
-func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error) {
-	lggr := w.logger
+func (service *Service) Start(ctx context.Context, workflow *Workflow, data map[string]interface{}) (*uuid.UUID, error) {
+	lggr := service.logger
 	lggr.Info("Starting workflow")
-	execution := saga.NewExecution(workflow)
+	execution := NewExecution(workflow)
 	lggr.Infof("Starting saga with ID: %s", execution.ID.String())
 	err := execution.SetState("input", data)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error setting input data to execution")
 		return nil, err
 	}
-	err = w.executionRepository.Insert(ctx, execution)
+	err = service.executionRepository.Insert(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while saving execution")
 		return nil, err
@@ -60,7 +63,7 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 		lggr.Info("There are no steps to process. Successfully finished workflow.")
 		return nil, nil
 	}
-	actionType := saga.REQUEST_ACTION_TYPE
+	actionType := REQUEST_ACTION_TYPE
 	event, err := firstStep.PayloadBuilder.Build(ctx, execution, actionType)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while building payload")
@@ -73,7 +76,7 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 		return nil, err
 	}
 
-	err = w.publisher.Publish(ctx, firstStep.Topics.Request, eventJSON)
+	err = service.publisher.Publish(ctx, firstStep.Topics.Request, eventJSON)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return nil, err
@@ -83,8 +86,8 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 }
 
 // TODO: add unit tests
-func (w *Execution) ProcessMessage(ctx context.Context, event *events.Event, execution *saga.Execution) (err error) {
-	lggr := w.logger
+func (service *Service) ProcessMessage(ctx context.Context, event *events.Event, execution *Execution) (err error) {
+	lggr := service.logger
 	lggr.Infof("Saga Service started processing message with event: %s", event.Type)
 	workflow := execution.Workflow
 	currentStep, ok := workflow.Steps.GetStepFromServiceEvent(event.Origin, event.Type)
@@ -100,7 +103,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, event *events.Event, exe
 		return err
 	}
 
-	err = w.executionRepository.Save(ctx, execution)
+	err = service.executionRepository.Save(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error saving execution state")
 		return err
@@ -131,7 +134,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, event *events.Event, exe
 		return err
 	}
 
-	err = w.publisher.Publish(ctx, nextStep.Step.Topics.Request, eventJSON)
+	err = service.publisher.Publish(ctx, nextStep.Step.Topics.Request, eventJSON)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return err

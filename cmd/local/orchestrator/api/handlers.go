@@ -7,7 +7,6 @@ import (
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/appcontext"
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
-	"github.com/bmviniciuss/sagas-golang/internal/saga/service"
 	"github.com/bmviniciuss/sagas-golang/pkg/responses"
 	"github.com/go-chi/render"
 	goval "github.com/go-playground/validator/v10"
@@ -23,7 +22,7 @@ type HandlersPort interface {
 type Handlers struct {
 	logger             *zap.SugaredLogger
 	workflowRepository saga.WorkflowRepository
-	workflowService    service.Port
+	workflowService    saga.ServicePort
 	validator          *goval.Validate
 }
 
@@ -34,7 +33,7 @@ var (
 func NewHandlers(
 	logger *zap.SugaredLogger,
 	workflowRepository saga.WorkflowRepository,
-	workflowService service.Port,
+	workflowService saga.ServicePort,
 	validator *goval.Validate,
 ) *Handlers {
 	return &Handlers{

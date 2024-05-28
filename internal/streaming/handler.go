@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
-	"github.com/bmviniciuss/sagas-golang/internal/saga/service"
 	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.uber.org/zap"
@@ -21,20 +20,20 @@ type IdempotenceService interface {
 type MessageHandler struct {
 	logger              *zap.SugaredLogger
 	executionRepository saga.ExecutionRepository
-	workflowService     *service.Execution
+	sagaService         saga.ServicePort
 	idempotenceService  IdempotenceService
 }
 
 func NewMessageHandler(
 	logger *zap.SugaredLogger,
 	executionRepository saga.ExecutionRepository,
-	workflowService *service.Execution,
+	workflowService saga.ServicePort,
 	idempotenceService IdempotenceService,
 ) *MessageHandler {
 	return &MessageHandler{
 		logger:              logger,
 		executionRepository: executionRepository,
-		workflowService:     workflowService,
+		sagaService:         workflowService,
 		idempotenceService:  idempotenceService,
 	}
 }
@@ -87,7 +86,7 @@ func (h *MessageHandler) Handle(ctx context.Context, msg *kafka.Message, commitF
 		return nil
 	}
 
-	err = h.workflowService.ProcessMessage(ctx, &event, execution)
+	err = h.sagaService.ProcessMessage(ctx, &event, execution)
 	if err != nil {
 		l.With(zap.Error(err)).Error("Got error processing workflow message")
 		return err

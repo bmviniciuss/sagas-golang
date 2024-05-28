@@ -16,7 +16,6 @@ import (
 	"github.com/bmviniciuss/sagas-golang/internal/adapters/infra/kv"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
 	"github.com/bmviniciuss/sagas-golang/internal/saga"
-	"github.com/bmviniciuss/sagas-golang/internal/saga/service"
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
 	"github.com/bmviniciuss/sagas-golang/pkg/validator"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -73,7 +72,7 @@ func main() {
 		}
 		consumerGroupID    = "sagas-golang"
 		publisher          = newPublisher(lggr, bootstrapServers)
-		workflowService    = service.NewExecution(lggr, executionsRepository, publisher)
+		workflowService    = saga.NewService(lggr, executionsRepository, publisher)
 		idempotenceService = kv.NewAdapter(lggr, redisConn)
 		messageHandler     = streaming.NewMessageHandler(lggr, executionsRepository, workflowService, idempotenceService)
 	)
