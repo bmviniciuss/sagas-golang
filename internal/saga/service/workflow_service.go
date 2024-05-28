@@ -81,12 +81,12 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 }
 
 // TODO: add unit tests
-func (w *Execution) ProcessMessage(ctx context.Context, message *events.Event, execution *saga.Execution) (err error) {
+func (w *Execution) ProcessMessage(ctx context.Context, event *events.Event, execution *saga.Execution) (err error) {
 	lggr := w.logger
-	lggr.Infof("Saga Service started processing message with event: %s", message.Type)
+	lggr.Infof("Saga Service started processing message with event: %s", event.Type)
 	workflow := execution.Workflow
 	// Saving response data to execution state
-	err = execution.SetState(message.Type, message.Data)
+	err = execution.SetState(event.Type, event.Data)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error setting message data to execution state")
 		return err
@@ -99,7 +99,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *events.Event, e
 	}
 
 	// Aquring next step
-	nextStep, err := workflow.GetNextStep(ctx, *message)
+	nextStep, err := workflow.GetNextStep(ctx, *event)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while getting next step")
 		return err
