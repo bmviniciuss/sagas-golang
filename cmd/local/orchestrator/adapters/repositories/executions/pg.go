@@ -119,7 +119,7 @@ func (r *RepositoryAdapter) Find(ctx context.Context, globalID string) (*saga.Ex
 		return nil, err
 	}
 
-	var state map[string][]byte
+	var state map[string]interface{}
 	err = json.Unmarshal(execRow.State, &state)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error Unmarshalling state")

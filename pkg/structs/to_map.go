@@ -26,3 +26,7 @@ func FromBytes(data []byte, dest interface{}) error {
 	}
 	return nil
 }
+
+func ToBytes(data interface{}) ([]byte, error) {
+	return sonic.Marshal(data)
+}

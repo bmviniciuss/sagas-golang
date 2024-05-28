@@ -1,7 +1,6 @@
 package saga
 
 import (
-	"encoding/json"
 	"errors"
 	"reflect"
 
@@ -12,7 +11,7 @@ import (
 type Execution struct {
 	ID       uuid.UUID
 	Workflow *Workflow
-	State    map[string][]byte
+	State    map[string]interface{}
 }
 
 func (e *Execution) IsEmpty() bool {
@@ -23,16 +22,12 @@ func NewExecution(workflow *Workflow) *Execution {
 	return &Execution{
 		ID:       uuid.New(),
 		Workflow: workflow,
-		State:    make(map[string][]byte),
+		State:    make(map[string]interface{}),
 	}
 }
 
 func (e *Execution) SetState(key string, value interface{}) error {
-	data, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	e.State[key] = data
+	e.State[key] = value
 	return nil
 }
 
@@ -41,7 +36,13 @@ func (e *Execution) Read(key string, dest interface{}) error {
 	if !ok {
 		return errors.New("unable to get key value")
 	}
-	err := structs.FromBytes(data, &dest)
+
+	dataBytes, err := structs.ToBytes(data)
+	if err != nil {
+		return err
+	}
+
+	err = structs.FromBytes(dataBytes, &dest)
 	if err != nil {
 		return err
 	}
