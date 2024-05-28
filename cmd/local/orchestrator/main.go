@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +20,7 @@ import (
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
 	"github.com/bmviniciuss/sagas-golang/pkg/validator"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -46,8 +48,23 @@ func main() {
 		lggr.With(zap.Error(err)).Fatal("Got error connecting to Redis")
 	}
 
+	dbpool, err := pgxpool.New(context.Background(), "postgres://sagas:sagas@localhost:5432/sagas") // TODO: add from env
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbpool.Close()
+	lggr.Info("Connected to database")
+
 	var (
-		executionsRepository = executions.NewInmemRepository()
+		workflows = []saga.Workflow{
+			*workflows.NewCreateOrderV1(lggr),
+		}
+		workflowRepository = workflowrepo.NewInmemRepository(workflows)
+	)
+
+	var (
+		executionsRepository = executions.NewRepositoryAdapter(lggr, dbpool, workflowRepository)
 		bootstrapServers     = "localhost:9092"
 		topics               = []string{
 			"service.orders.events",
@@ -61,14 +78,10 @@ func main() {
 		messageHandler     = streaming.NewMessageHandler(lggr, executionsRepository, workflowService, idempotenceService)
 	)
 
-	workflows := []saga.Workflow{
-		*workflows.NewCreateOrderV1(lggr),
-	}
 	var (
-		workflowRepository = workflowrepo.NewInmemRepository(workflows)
-		val                = validator.New()
-		apiHandlers        = api.NewHandlers(lggr, workflowRepository, workflowService, val)
-		httpServer         = newApiServer(":3000", apiHandlers)
+		val         = validator.New()
+		apiHandlers = api.NewHandlers(lggr, workflowRepository, workflowService, val)
+		httpServer  = newApiServer(":3000", apiHandlers)
 	)
 
 	consumer, err := newConsumer(lggr, topics, bootstrapServers, consumerGroupID, messageHandler)

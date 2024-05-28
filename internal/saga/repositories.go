@@ -3,6 +3,7 @@ package saga
 import "context"
 
 type ExecutionRepository interface {
+	Insert(ctx context.Context, execution *Execution) error
 	Find(ctx context.Context, globalID string) (*Execution, error)
 	Save(ctx context.Context, execution *Execution) error
 }

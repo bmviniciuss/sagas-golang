@@ -38,7 +38,7 @@ func NewExecution(
 }
 
 func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map[string]interface{}) (*uuid.UUID, error) {
-	lggr := w.logger // TODO: rename to lggr
+	lggr := w.logger
 	lggr.Info("Starting workflow")
 	execution := saga.NewExecution(workflow)
 	lggr.Infof("Starting saga with ID: %s", execution.ID.String())
@@ -47,7 +47,7 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 		lggr.With(zap.Error(err)).Error("Got error setting input data to execution")
 		return nil, err
 	}
-	err = w.executionRepository.Save(ctx, execution)
+	err = w.executionRepository.Insert(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while saving execution")
 		return nil, err
