@@ -104,14 +104,14 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *events.Event, e
 		lggr.With(zap.Error(err)).Error("Got error while getting next step")
 		return err
 	}
-	if nextStep == nil {
+	if nextStep.Step == nil {
 		lggr.Info("There are no more steps to process. Successfully finished workflow.")
 		return nil
 	}
-	lggr.Infof("Next step: %s", nextStep.Name)
+	lggr.Infof("Next step: %s", nextStep.Step.Name)
 
 	// building next event event
-	nextEvent, err := nextStep.PayloadBuilder.Build(ctx, execution, saga.RequestActionType)
+	nextEvent, err := nextStep.Step.PayloadBuilder.Build(ctx, execution, nextStep.ActionType)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error building next step event")
 		return err
@@ -123,7 +123,7 @@ func (w *Execution) ProcessMessage(ctx context.Context, message *events.Event, e
 		return err
 	}
 
-	err = w.publisher.Publish(ctx, nextStep.Topics.Request, eventJSON)
+	err = w.publisher.Publish(ctx, nextStep.Step.Topics.Request, eventJSON)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error publishing message to destination")
 		return err

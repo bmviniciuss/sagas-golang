@@ -12,6 +12,10 @@ func (at ActionType) IsRequest() bool {
 	return at == RequestActionType
 }
 
+func (at ActionType) IsCompensationRequest() bool {
+	return at == CompensationRequestActionType
+}
+
 func (at ActionType) IsSuccess() bool {
 	return at == SuccessActionType
 }
@@ -35,9 +39,9 @@ func (at ActionType) Next() (ActionType, error) {
 	case SuccessActionType:
 		return RequestActionType, nil
 	case FailureActionType:
-		return CompensateActionType, nil
+		return CompensationRequestActionType, nil
 	case CompensatedActionType:
-		return CompensateActionType, nil
+		return CompensationRequestActionType, nil
 	default:
 		return ActionType(""), fmt.Errorf("unable to get next action type for type: %s", at)
 	}
@@ -45,9 +49,9 @@ func (at ActionType) Next() (ActionType, error) {
 
 const (
 	// requests
-	RequestActionType    ActionType = "request"
-	CompensateActionType ActionType = "compensate"
-	// responses
+	RequestActionType             ActionType = "request"
+	CompensationRequestActionType ActionType = "compensation_request"
+	// TODO: remove
 	SuccessActionType     ActionType = "success"
 	FailureActionType     ActionType = "failure"
 	CompensatedActionType ActionType = "compensated"
@@ -57,8 +61,8 @@ func NewActionType(actionType string) (ActionType, error) {
 	switch actionType {
 	case RequestActionType.String():
 		return RequestActionType, nil
-	case CompensateActionType.String():
-		return CompensateActionType, nil
+	case CompensationRequestActionType.String():
+		return CompensationRequestActionType, nil
 	case SuccessActionType.String():
 		return SuccessActionType, nil
 	case FailureActionType.String():

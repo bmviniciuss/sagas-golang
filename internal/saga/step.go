@@ -23,10 +23,11 @@ type (
 	}
 
 	EventTypes struct {
-		Request      string
-		Success      string
-		Failure      string
-		Compensation string
+		Request            string
+		Success            string
+		Failure            string
+		CompesationRequest string
+		Compensation       string
 	}
 
 	Topics struct {

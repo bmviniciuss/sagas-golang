@@ -22,6 +22,9 @@ func (b *CreateOrderStepPayloadBuilder) Build(ctx context.Context, exec *saga.Ex
 	if action.IsRequest() {
 		return b.buildRequestPayload(ctx, exec)
 	}
+	if action.IsCompensationRequest() {
+		return b.buildCompensationRequestPayload(ctx, exec)
+	}
 	lggr.Infof("No payload to build for action: %s", action.String())
 	return nil, nil
 }
@@ -63,5 +66,17 @@ func (b *CreateOrderStepPayloadBuilder) buildRequestPayload(_ context.Context, e
 		return nil, err
 	}
 
+	return eventMap, nil
+}
+
+func (b *CreateOrderStepPayloadBuilder) buildCompensationRequestPayload(_ context.Context, exec *saga.Execution) (map[string]interface{}, error) {
+	lggr := b.logger
+	lggr.Info("Building request payload to compensate create order step")
+	evt := events.NewEvent("reject_order", "orchestrator", map[string]interface{}{}).WithCorrelationID(exec.ID.String())
+	eventMap, err := structs.ToMap(evt)
+	if err != nil {
+		lggr.With(zap.Error(err)).Error("Got error converting event to map")
+		return nil, err
+	}
 	return eventMap, nil
 }

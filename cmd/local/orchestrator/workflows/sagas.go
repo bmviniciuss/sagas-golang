@@ -17,10 +17,11 @@ func NewCreateOrderV1(logger *zap.SugaredLogger) *saga.Workflow {
 				Compensable:    true,
 				PayloadBuilder: createorder.NewCreateOrderStepPayloadBuilder(logger),
 				EventTypes: saga.EventTypes{
-					Request:      "create_order",
-					Success:      "order_created",
-					Failure:      "order_creation_failed",
-					Compensation: "order_creation_compensated",
+					Request:            "create_order",
+					CompesationRequest: "reject_order",
+					Success:            "order_created",
+					Failure:            "order_creation_failed",
+					Compensation:       "order_rejected",
 				},
 				Topics: saga.Topics{
 					Request:  "service.orders.request",
