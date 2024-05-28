@@ -58,7 +58,7 @@ func (w *Execution) Start(ctx context.Context, workflow *saga.Workflow, data map
 		lggr.Info("There are no steps to process. Successfully finished workflow.")
 		return nil, nil
 	}
-	actionType := saga.RequestActionType
+	actionType := saga.REQUEST_ACTION_TYPE
 	event, err := firstStep.PayloadBuilder.Build(ctx, execution, actionType)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while building payload")

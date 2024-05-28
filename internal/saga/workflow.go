@@ -33,7 +33,7 @@ type NextStep struct {
 // If the message is a success message, the next step in the workflow is returned or nil if there are no more steps
 // If the message is a failure message, the first compensation step is returned or nil if there are no more steps
 // If the message is a compensated message, the next compensable step in the workflow is returned or nil if there are no more steps
-func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextStep, error) { // TODO: use ptr to workflow
+func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextStep, error) {
 	currentStep, ok := w.Steps.GetStepFromServiceEvent(message.Origin, message.Type)
 	if !ok {
 		return NextStep{}, ErrCurrentStepNotFound
@@ -46,7 +46,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextS
 		}
 		return NextStep{
 			Step:       nextStep,
-			ActionType: RequestActionType,
+			ActionType: REQUEST_ACTION_TYPE,
 		}, nil
 	}
 
@@ -57,7 +57,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextS
 		}
 		return NextStep{
 			Step:       firstCompensableStep,
-			ActionType: CompensationRequestActionType,
+			ActionType: COMPESATION_REQUEST_ACTION_TYPE,
 		}, nil
 	}
 
@@ -68,7 +68,7 @@ func (w *Workflow) GetNextStep(ctx context.Context, message events.Event) (NextS
 		}
 		return NextStep{
 			Step:       nextCompensableStep,
-			ActionType: CompensationRequestActionType,
+			ActionType: COMPESATION_REQUEST_ACTION_TYPE,
 		}, nil
 	}
 	return NextStep{}, ErrUnknownActionType

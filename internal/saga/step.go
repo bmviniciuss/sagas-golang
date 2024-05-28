@@ -15,7 +15,7 @@ type (
 	// StepData represents the data of a step in the workflow.
 	StepData struct {
 		Name           string
-		ServiceName    string // TODO: rename to ResponsibleService
+		ServiceName    string
 		Compensable    bool
 		PayloadBuilder PayloadBuilder
 		EventTypes     EventTypes
