@@ -14,6 +14,7 @@ func (os OrderStatus) String() string {
 const (
 	OrderStatusApprovalPending OrderStatus = "APPROVAL_PENDING"
 	OrderStatusApproved        OrderStatus = "APPROVED"
+	OrderStatusRejected        OrderStatus = "REJECTED"
 )
 
 type Order struct {
@@ -28,6 +29,11 @@ type Order struct {
 
 func (o *Order) Approve() {
 	o.Status = OrderStatusApproved
+	o.UpdatedAt = utc.Now()
+}
+
+func (o *Order) Reject() {
+	o.Status = OrderStatusRejected
 	o.UpdatedAt = utc.Now()
 }
 

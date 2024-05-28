@@ -69,6 +69,7 @@ func main() {
 		usecasesMap      = map[string]application.MessageHandler{
 			"create_order":  handlers.NewCreateOrderHandler(lggr, usecases.NewCreateOrder(lggr, ordersRepository)),
 			"approve_order": handlers.NewApproveOrder(lggr, usecases.NewApproveOrder(lggr, ordersRepository)),
+			"reject_order":  handlers.NewRejectOrder(lggr, usecases.NewRejectOrder(lggr, ordersRepository)),
 		}
 	)
 
