@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/accounting/application"
 	"github.com/bmviniciuss/sagas-golang/pkg/events"
 	"go.uber.org/zap"
 )
