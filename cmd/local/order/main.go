@@ -14,6 +14,7 @@ import (
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/api"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application/usecases"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/order/config/env"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/handlers"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
 	"github.com/bmviniciuss/sagas-golang/internal/streaming"
@@ -34,11 +35,16 @@ func main() {
 	defer close(errCh)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	lggr := logger.New("orders-service")
+	cfg, err := env.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	lggr := logger.New(cfg.ServiceName)
 	defer lggr.Sync()
 
 	lggr.Info("Starting Order Service")
-	dbpool, err := pgxpool.New(context.Background(), "postgres://sagas:sagas@localhost:5432/sagas") // TODO: add from env
+	dbpool, err := pgxpool.New(context.Background(), cfg.DBConnectionString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
@@ -46,18 +52,16 @@ func main() {
 	defer dbpool.Close()
 	lggr.Info("Connected to database")
 
-	redisConn := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379", // TODO: add from env
-	})
+	redisConn := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
 	err = redisConn.Ping(ctx).Err()
 	if err != nil {
 		lggr.With(zap.Error(err)).Fatal("Got error connecting to Redis")
 	}
 
 	var (
-		bootstrapServers = "localhost:9092" // TODO: add from env
-		topics           = strings.Split("service.orders.request", ",")
-		group            = "order-service-group"
+		bootstrapServers = cfg.KafkaBootstrapServers
+		topics           = strings.Split(cfg.KafkaTopics, ",")
+		group            = cfg.KafkaGroupID
 	)
 
 	publisher := streaming.NewPublisher(lggr, &kafka.ConfigMap{
@@ -98,7 +102,7 @@ func main() {
 		listUseCase  = usecases.NewListOrders(lggr, ordersRepository)
 		getOrderByID = usecases.NewGetOrderByID(lggr, ordersRepository)
 		apiHandlers  = api.NewHandlers(lggr, listUseCase, getOrderByID)
-		httpServer   = newApiServer(":3001", apiHandlers)
+		httpServer   = newApiServer(":3000", apiHandlers)
 	)
 
 	go func() {

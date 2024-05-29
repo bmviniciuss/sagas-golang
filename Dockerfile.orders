@@ -1,0 +1,30 @@
+FROM golang:1.22.0 as builder
+
+RUN apt update
+
+RUN apt install -y librdkafka-dev git build-essential
+
+RUN go env -w GOPROXY=https://proxy.golang.org
+RUN go env -w CGO_ENABLED=1
+RUN go env -w GO111MODULE=on
+
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+COPY . .
+
+RUN go mod download
+
+RUN go build -o bootstrap -ldflags "-linkmode external -extldflags -static" ./cmd/local/order/
+
+FROM scratch as runner
+
+WORKDIR /app
+
+COPY --from=builder /app/bootstrap /app/bootstrap
+
+EXPOSE 3000
+
+CMD ["/app/bootstrap"]

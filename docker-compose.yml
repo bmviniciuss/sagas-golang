@@ -122,6 +122,23 @@ services:
     networks:
       - net
 
+  orders:
+    build:
+      context: .
+      dockerfile: Dockerfile.orders
+    container_name: orders
+    restart: always
+    ports:
+      - 3001:3000
+    environment:
+      SERVICE_NAME: orders
+      DB_CONNECTION_STRING: postgres://sagas:sagas@postgres:5432/sagas
+      REDIS_ADDR: redis:6379
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      KAKFA_TOPICS: service.orders.request
+      KAFKA_GROUP_ID: orders-service-group
+    networks:
+      - net
 
 networks:
   net:
