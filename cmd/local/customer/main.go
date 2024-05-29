@@ -7,6 +7,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/bmviniciuss/sagas-golang/cmd/local/customer/config/env"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/customer/handlers"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/order/application"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
@@ -26,15 +27,20 @@ func main() {
 	defer close(errCh)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	lggr := logger.New("customer-service")
+	cfg, err := env.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	lggr := logger.New(cfg.ServiceName)
 	defer lggr.Sync()
 
 	lggr.Info("Starting Customer Service")
 
 	var (
-		bootstrapServers = "localhost:9092"                                // TODO: add from env
-		topics           = strings.Split("service.customers.request", ",") // TODO: add from env
-		group            = "consumer-service-group"                        // TODO: add from env
+		bootstrapServers = cfg.KafkaBootstrapServers
+		topics           = strings.Split(cfg.KafkaTopics, ",")
+		group            = cfg.KafkaGroupID
 	)
 
 	publisher := streaming.NewPublisher(lggr, &kafka.ConfigMap{

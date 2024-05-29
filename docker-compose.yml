@@ -108,6 +108,21 @@ services:
     networks:
       - net
 
+  customers:
+    build:
+      context: .
+      dockerfile: Dockerfile.customer
+    container_name: customer
+    restart: always
+    environment:
+      SERVICE_NAME: customer
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      KAKFA_TOPICS: service.customers.request
+      KAFKA_GROUP_ID: customers-service-group
+    networks:
+      - net
+
+
 networks:
   net:
     driver: bridge
