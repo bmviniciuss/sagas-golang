@@ -140,6 +140,24 @@ services:
     networks:
       - net
 
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.orchestrator
+    container_name: orchestrator
+    restart: always
+    ports:
+      - 3000:3000
+    environment:
+      SERVICE_NAME: orchestrator
+      DB_CONNECTION_STRING: postgres://sagas:sagas@postgres:5432/sagas
+      REDIS_ADDR: redis:6379
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      KAKFA_TOPICS: service.orders.events,service.customers.events,service.accounting.events
+      KAFKA_GROUP_ID: orchestrator-service-group
+    networks:
+      - net
+
 networks:
   net:
     driver: bridge

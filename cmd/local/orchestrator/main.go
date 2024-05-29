@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/adapters/repositories/executions"
 	workflowrepo "github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/adapters/repositories/workflows"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/api"
+	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/config/env"
 	"github.com/bmviniciuss/sagas-golang/cmd/local/orchestrator/workflows"
 	"github.com/bmviniciuss/sagas-golang/internal/adapters/infra/kv"
 	"github.com/bmviniciuss/sagas-golang/internal/config/logger"
@@ -36,18 +38,21 @@ func main() {
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	lggr := logger.New("orchestrator-service")
+	cfg, err := env.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	lggr := logger.New(cfg.ServiceName)
 	defer lggr.Sync()
 
-	redisConn := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
-	err := redisConn.Ping(ctx).Err()
+	redisConn := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
+	err = redisConn.Ping(ctx).Err()
 	if err != nil {
 		lggr.With(zap.Error(err)).Fatal("Got error connecting to Redis")
 	}
 
-	dbpool, err := pgxpool.New(context.Background(), "postgres://sagas:sagas@localhost:5432/sagas") // TODO: add from env
+	dbpool, err := pgxpool.New(context.Background(), cfg.DBConnectionString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
@@ -64,17 +69,13 @@ func main() {
 
 	var (
 		executionsRepository = executions.NewRepositoryAdapter(lggr, dbpool, workflowRepository)
-		bootstrapServers     = "localhost:9092"
-		topics               = []string{
-			"service.orders.events",
-			"service.customers.events",
-			"service.accounting.events",
-		}
-		consumerGroupID    = "sagas-golang"
-		publisher          = newPublisher(lggr, bootstrapServers)
-		workflowService    = saga.NewService(lggr, executionsRepository, publisher)
-		idempotenceService = kv.NewAdapter(lggr, redisConn)
-		messageHandler     = streaming.NewMessageHandler(lggr, executionsRepository, workflowService, idempotenceService)
+		bootstrapServers     = cfg.KafkaBootstrapServers
+		topics               = strings.Split(cfg.KafkaTopics, ",")
+		consumerGroupID      = cfg.KafkaGroupID
+		publisher            = newPublisher(lggr, bootstrapServers)
+		workflowService      = saga.NewService(lggr, executionsRepository, publisher)
+		idempotenceService   = kv.NewAdapter(lggr, redisConn)
+		messageHandler       = streaming.NewMessageHandler(lggr, executionsRepository, workflowService, idempotenceService)
 	)
 
 	var (
