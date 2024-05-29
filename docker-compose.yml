@@ -93,6 +93,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+  
+  accounting:
+    build:
+      context: .
+      dockerfile: Dockerfile.accounting
+    container_name: accounting
+    restart: always
+    environment:
+      SERVICE_NAME: accounting
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      KAKFA_TOPICS: service.accounting.request
+      KAFKA_GROUP_ID: accounting-service-group
+    networks:
+      - net
 
 networks:
   net:
