@@ -20,3 +20,18 @@ Content-Type: application/json
     }
   ]
 }
+
+// Orders
+@ordersPath = localhost:3001
+
+###
+GET http://{{ordersPath}}/v1/health
+Content-Type: application/json
+
+###
+GET http://{{ordersPath}}/v1/orders
+Content-Type: application/json
+
+###
+GET http://{{ordersPath}}/v1/orders/862ed2ba-d983-43fb-95a8-dd9d3471389b
+Content-Type: application/json
