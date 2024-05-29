@@ -3,3 +3,5 @@ docs
 event.json
 Makefile
 .gitignore
+scripts
+ddl
