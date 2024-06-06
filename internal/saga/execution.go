@@ -26,9 +26,8 @@ func NewExecution(workflow *Workflow) *Execution {
 	}
 }
 
-func (e *Execution) SetState(key string, value interface{}) error {
+func (e *Execution) SetState(key string, value interface{}) {
 	e.State[key] = value
-	return nil
 }
 
 func (e *Execution) Read(key string, dest interface{}) error {

@@ -47,12 +47,8 @@ func (service *Service) Start(ctx context.Context, workflow *Workflow, data map[
 	lggr.Info("Starting workflow")
 	execution := NewExecution(workflow)
 	lggr.Infof("Starting saga with ID: %s", execution.ID.String())
-	err := execution.SetState("input", data)
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error setting input data to execution")
-		return nil, err
-	}
-	err = service.executionRepository.Insert(ctx, execution)
+	execution.SetState("input", data)
+	err := service.executionRepository.Insert(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error while saving execution")
 		return nil, err
@@ -97,12 +93,7 @@ func (service *Service) ProcessMessage(ctx context.Context, event *events.Event,
 
 	currenctStepResponseKey := fmt.Sprintf("%s.response.%s", currentStep.Name, event.Type)
 	// Saving response data to execution state
-	err = execution.SetState(currenctStepResponseKey, event.Data)
-	if err != nil {
-		lggr.With(zap.Error(err)).Error("Got error setting message data to execution state")
-		return err
-	}
-
+	execution.SetState(currenctStepResponseKey, event.Data)
 	err = service.executionRepository.Save(ctx, execution)
 	if err != nil {
 		lggr.With(zap.Error(err)).Error("Got error saving execution state")
