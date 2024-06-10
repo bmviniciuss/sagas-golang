@@ -60,7 +60,7 @@ func (h *AuthorizeCardHandler) Handle(ctx context.Context, msg *events.Event) (*
 
 	if req.Card == "0000000000000000" {
 		lggr.Error("Card not authorized for this purchase")
-		errEvt := events.NewEvent("card_authorization_failed", "accounting", nil).WithCorrelationID(globalID)
+		errEvt := events.NewEvent("card_authorization_failed", "accounting", make(map[string]interface{})).WithCorrelationID(globalID)
 		return errEvt, nil
 	}
 

@@ -20,13 +20,17 @@ type Event struct {
 
 func NewEvent(eventType string, origin string, data map[string]interface{}) *Event {
 	now := utc.Now()
+	payload := make(map[string]interface{})
+	if data != nil {
+		payload = data
+	}
 	return &Event{
 		ID:            uuid.NewString(),
 		Type:          eventType,
 		Origin:        origin,
 		CorrelationID: uuid.NewString(),
 		Date:          now.Time().Format(utc.ISO8601Layout),
-		Data:          data,
+		Data:          payload,
 	}
 }
 

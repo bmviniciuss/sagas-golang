@@ -59,7 +59,7 @@ func (h *VerifyCustomer) Handle(ctx context.Context, msg *events.Event) (*events
 
 	if req.CustomerID.String() == "00000000-0000-0000-0000-000000000000" {
 		lggr.Error("Customer not available to create order")
-		errEvt := events.NewEvent("customer_verification_failed", "customers", nil).WithCorrelationID(globalID)
+		errEvt := events.NewEvent("customer_verification_failed", "customers", make(map[string]interface{})).WithCorrelationID(globalID) // TODO: fix null on data
 		return errEvt, nil
 	}
 
