@@ -26,3 +26,12 @@ kitchen:
 
 accounting:
 	go run ./cmd/local/accounting/
+
+services-up:
+	docker compose up orchestrator orders customers accounting -d
+
+services-down:
+	docker compose down orchestrator orders customers accounting
+
+services-logs:
+	docker compose logs orchestrator orders customers accounting -f
