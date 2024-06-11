@@ -8,7 +8,7 @@ POST http://{{path}}/v1/create-orders
 Content-Type: application/json
 
 {
-  "customer_id": "018f6058-66f6-7110-82ac-8fd0034b1363",
+  "customer_id": "00000000-0000-0000-0000-000000000001",
   "card": "0000000000000001",
   "amount": 140,
   "currency_code": "BRL",
@@ -33,5 +33,5 @@ GET http://{{ordersPath}}/v1/orders
 Content-Type: application/json
 
 ###
-GET http://{{ordersPath}}/v1/orders/862ed2ba-d983-43fb-95a8-dd9d3471389b
+GET http://{{ordersPath}}/v1/orders/3c13dc7c-7a94-4752-a5e2-0733d79394c4
 Content-Type: application/json
