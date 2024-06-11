@@ -1,8 +1,8 @@
 FROM golang:1.22.0 as builder
 
 RUN apt update
-
 RUN apt install -y librdkafka-dev git build-essential
+RUN update-ca-certificates
 
 RUN go env -w GOPROXY=https://proxy.golang.org
 RUN go env -w CGO_ENABLED=1
@@ -11,19 +11,18 @@ RUN go env -w GO111MODULE=on
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-
-COPY . .
-
+COPY go.mod .
+COPY go.sum .
 RUN go mod download
 
-RUN go build -o bootstrap -ldflags "-linkmode external -extldflags -static" ./cmd/local/orchestrator/
+COPY . .
+RUN  CGO_ENABLED=1 go build -o bootstrap -a -ldflags '-w -s -extldflags "-static"' ./cmd/local/orchestrator/
 
-FROM scratch as runner
+FROM alpine as runner
 
 WORKDIR /app
-
-COPY --from=builder /app/bootstrap /app/bootstrap
+COPY --from=builder /app/bootstrap .
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 3000
 
