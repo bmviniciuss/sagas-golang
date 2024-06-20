@@ -132,7 +132,7 @@ flowchart LR
 ### Style Of Communication
 For this orchestrated saga demo, each service will use two Kafka topics: one for command requests and another that will produce events as the outcome of a command.
 
-![Request-Event Communication](./images/request-event.png)
+![Request-Event Communication](./docs/images/request-event.png)
 
 The topic's naming pattern is defined as:
 - For requests: `service.SERVICE_NAME.requests`
@@ -145,7 +145,7 @@ Examples:
 
 ### Architecture
 The general architecture of this demo is as follow:
-![general arch](./images/general-arch.png)
+![general arch](./docs/images/general-arch.png)
 
 #### Orchestrator
 A golang server that will receive http request with the contract.
